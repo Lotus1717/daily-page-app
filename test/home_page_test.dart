@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
+import 'package:daily_page/models/book_pick_strategy.dart';
 import 'package:daily_page/models/daily_page_reading.dart';
 import 'package:daily_page/screens/home_page.dart';
 import 'package:daily_page/services/daily_page_client.dart';
@@ -14,7 +15,7 @@ void main() {
   });
 
   group('HomePage interactions', () {
-    testWidgets('refresh button triggers page reload', (tester) async {
+    testWidgets('再读一页 triggers page reload', (tester) async {
       final client = FakeDailyPageClient(
         results: [
           DailyPageFetchResult(
@@ -50,7 +51,7 @@ void main() {
       expect(find.text('第一本书'), findsOneWidget);
       expect(client.fetchCount, 1);
 
-      await tester.tap(find.byTooltip('刷新'));
+      await tester.tap(find.text('再读一页'));
       await tester.pumpAndSettle();
 
       expect(client.fetchCount, 2);
@@ -217,10 +218,10 @@ void main() {
       expect(services.pageSvc.discoveryMode, isTrue);
       expect(find.text('随机探索'), findsOneWidget);
       expect(find.text('换一本'), findsOneWidget);
-      expect(find.byTooltip('刷新'), findsNothing);
+      expect(find.text('再读一页'), findsNothing);
     });
 
-    testWidgets('normal mode shows strategy label and refresh button',
+    testWidgets('normal mode shows strategy label and 再读一页 button',
         (tester) async {
       final services = await createTestServices(
         withReadingBook: true,
@@ -233,7 +234,7 @@ void main() {
 
       expect(services.pageSvc.discoveryMode, isFalse);
       expect(find.text('轮询在读书'), findsOneWidget);
-      expect(find.byTooltip('刷新'), findsOneWidget);
+      expect(find.text('再读一页'), findsOneWidget);
       expect(find.text('换一本'), findsNothing);
     });
 
@@ -267,7 +268,7 @@ void main() {
       expect(services.pageSvc.discoveryMode, isFalse);
     });
 
-    testWidgets('adding reading book shows refresh and loads that book',
+    testWidgets('adding reading book shows 再读一页 and loads that book',
         (tester) async {
       final client = FakeDailyPageClient(
         results: [
@@ -301,22 +302,57 @@ void main() {
 
       expect(services.pageSvc.discoveryMode, isTrue);
       expect(find.text('换一本'), findsOneWidget);
-      expect(find.byTooltip('刷新'), findsNothing);
+      expect(find.text('再读一页'), findsNothing);
 
       await services.shelfSvc.addManual('在读书目', '作者');
       await tester.pumpAndSettle();
 
       expect(services.pageSvc.discoveryMode, isFalse);
-      expect(find.byTooltip('刷新'), findsOneWidget);
+      expect(find.text('再读一页'), findsOneWidget);
       expect(find.text('换一本'), findsNothing);
-
-      await tester.tap(find.byTooltip('刷新'));
-      await tester.pumpAndSettle();
 
       expect(client.fetchCount, 2);
       expect(client.lastBook?.title, '在读书目');
       expect(find.text('在读书目'), findsOneWidget);
       expect(find.text('手动书的摘录'), findsOneWidget);
+    });
+
+    testWidgets('multi-book in-reading shows 换一本 and 再读一页',
+        (tester) async {
+      final services = await createTestServices(
+        withCookie: true,
+        withReadingBook: true,
+        preloadPage: true,
+      );
+      await services.shelfSvc.addManual('第二本书', '作者');
+
+      await tester.pumpWidget(services.wrap(const HomePage()));
+      await tester.pumpAndSettle();
+
+      expect(services.shelfSvc.readingBooks.length, 2);
+      expect(find.text('换一本'), findsOneWidget);
+      expect(find.text('再读一页'), findsOneWidget);
+    });
+
+    testWidgets('manual strategy hides 换一本 when 2+ reading books',
+        (tester) async {
+      final services = await createTestServices(
+        withCookie: true,
+        withReadingBook: true,
+        preloadPage: true,
+      );
+      await services.shelfSvc.addManual('第二本书', '作者');
+      await services.configSvc.setStrategy(BookPickStrategy.manual);
+      await services.configSvc.setManualBookId(
+        services.shelfSvc.readingBooks.first.id,
+      );
+
+      await tester.pumpWidget(services.wrap(const HomePage()));
+      await tester.pumpAndSettle();
+
+      expect(services.shelfSvc.readingBooks.length, 2);
+      expect(find.text('换一本'), findsNothing);
+      expect(find.text('再读一页'), findsOneWidget);
     });
 
     testWidgets('switch book and save both reflections keeps two entries',

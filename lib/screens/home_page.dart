@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../config/app_branding.dart';
 import '../config/theme.dart';
+import '../models/book_pick_strategy.dart';
 import '../services/bookshelf_service.dart';
 import '../services/daily_page_service.dart';
 import '../services/page_entry_service.dart';
@@ -79,12 +80,15 @@ class _HomePageState extends State<HomePage> {
         pageSvc.page != null &&
         !pageSvc.loading &&
         keyboardInset > 0;
+    // 以书架在读书队列为 UI 真源，避免 DailyPageService 内部状态滞后
+    final inDiscovery = !shelfSvc.hasReadingBooks;
+    final readingCount = shelfSvc.readingBooks.length;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppBranding.name),
         actions: [
-          if (pageSvc.discoveryMode)
+          if (inDiscovery)
             TextButton.icon(
               onPressed: pageSvc.loading ? null : () {
                 _lastPromptKey = null;
@@ -94,18 +98,40 @@ class _HomePageState extends State<HomePage> {
               icon: const Icon(Icons.shuffle_rounded, size: 18),
               label: const Text('换一本'),
             )
-          else
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded, size: 22),
-              onPressed: pageSvc.loading
-                  ? null
-                  : () {
-                      _lastPromptKey = null;
-                      promptSvc.reset();
-                      pageSvc.refresh().then((_) => _onPageUpdated());
-                    },
-              tooltip: '刷新',
+          else ...[
+            if (readingCount > 1 &&
+                shelfSvc.config.strategy != BookPickStrategy.manual)
+              Tooltip(
+                message: '从在读书换一本',
+                child: TextButton.icon(
+                  onPressed: pageSvc.loading
+                      ? null
+                      : () {
+                          _lastPromptKey = null;
+                          promptSvc.reset();
+                          pageSvc
+                              .nextReadingBook()
+                              .then((_) => _onPageUpdated());
+                        },
+                  icon: const Icon(Icons.skip_next_rounded, size: 18),
+                  label: const Text('换一本'),
+                ),
+              ),
+            Tooltip(
+              message: '还是这本书，再拆一段',
+              child: TextButton.icon(
+                onPressed: pageSvc.loading
+                    ? null
+                    : () {
+                        _lastPromptKey = null;
+                        promptSvc.reset();
+                        pageSvc.refresh().then((_) => _onPageUpdated());
+                      },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('再读一页'),
+              ),
             ),
+          ],
         ],
       ),
       body: SafeArea(
@@ -121,11 +147,14 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         _DateBadge(),
                         const Spacer(),
-                        if (!pageSvc.discoveryMode)
-                          Text(
-                            shelfSvc.config.strategy.label,
-                            style: const TextStyle(
-                                fontSize: 11, color: AppTheme.textLight),
+                        if (!inDiscovery)
+                          Tooltip(
+                            message: '今日书由「我」中选书策略决定',
+                            child: Text(
+                              shelfSvc.config.strategy.label,
+                              style: const TextStyle(
+                                  fontSize: 11, color: AppTheme.textLight),
+                            ),
                           )
                         else
                           const Text(
@@ -136,15 +165,11 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (!pageSvc.discoveryMode && !shelfSvc.hasReadingBooks)
-                      const _ShelfHintBanner(),
-                    if (!pageSvc.discoveryMode && !shelfSvc.hasReadingBooks)
-                      const SizedBox(height: 12),
-                    if (pageSvc.discoveryMode &&
+                    if (inDiscovery &&
                         pageSvc.page == null &&
                         !pageSvc.loading)
                       const _DiscoveryHintBanner(),
-                    if (pageSvc.discoveryMode &&
+                    if (inDiscovery &&
                         pageSvc.page == null &&
                         !pageSvc.loading)
                       const SizedBox(height: 12),

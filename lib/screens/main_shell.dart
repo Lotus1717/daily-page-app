@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../config/theme.dart';
+import '../services/daily_page_service.dart';
 import 'home_page.dart';
 import 'profile_page.dart';
 import 'reading_page.dart';
@@ -21,6 +23,13 @@ class _MainShellState extends State<MainShell> {
     ProfilePage(),
   ];
 
+  void _onTabSelected(int i) {
+    setState(() => _index = i);
+    if (i == 0) {
+      context.read<DailyPageService>().onHomeTabVisible();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,7 +39,7 @@ class _MainShellState extends State<MainShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: _onTabSelected,
         backgroundColor: AppTheme.card,
         indicatorColor: AppTheme.accentLight,
         destinations: const [

@@ -152,6 +152,28 @@ void main() {
       expect(service.pickedBook?.title, '在读书目');
     });
 
+    test('bookshelf add to reading auto-refreshes stale discovery page', () async {
+      final config = ReadingConfigService();
+      await config.load();
+      final shelf = BookshelfService(config: config);
+      await shelf.load();
+
+      var fetchCount = 0;
+      final client = _CountingClient(onFetch: () => fetchCount++);
+      final service = DailyPageService(client: client);
+      service.bindBookshelf(shelf);
+
+      await service.refresh();
+      expect(fetchCount, 1);
+      expect(service.discoveryMode, isTrue);
+
+      await shelf.addManual('在读书目', '作者');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fetchCount, 2);
+      expect(service.discoveryMode, isFalse);
+    });
+
     test('discoveryMode reflects bookshelf without waiting for refresh', () async {
       final config = ReadingConfigService();
       await config.load();
@@ -211,6 +233,67 @@ void main() {
       expect(service.pickedBook?.title, '第一本');
     });
 
+    test('nextReadingBook picks from queue with book title', () async {
+      final config = ReadingConfigService();
+      await config.setStrategy(BookPickStrategy.roundRobin);
+      final shelf = BookshelfService(config: config);
+      await shelf.load();
+      await shelf.addManual('第一本', '');
+      await shelf.addManual('第二本', '');
+
+      ShelfBook? capturedBook;
+      final client = _CapturingClient(
+        result: DailyPageFetchResult(
+          reading: DailyPageReading(
+            bookTitle: '第二本',
+            author: '',
+            content: '摘录',
+            sourceNote: '',
+            date: DateTime(2026, 6, 7),
+          ),
+        ),
+        onFetch: (book, _) => capturedBook = book,
+      );
+
+      final service = DailyPageService(client: client);
+      service.bindBookshelf(shelf);
+
+      await service.refresh();
+      expect(capturedBook?.title, '第一本');
+
+      await service.nextReadingBook();
+      expect(capturedBook?.title, '第二本');
+      expect(service.discoveryMode, isFalse);
+    });
+
+    test('pending refresh runs after in-flight discovery load when book added',
+        () async {
+      final config = ReadingConfigService();
+      await config.load();
+      final shelf = BookshelfService(config: config);
+      await shelf.load();
+
+      var fetchCount = 0;
+      final client = _DelayedCountingClient(
+        onFetch: () => fetchCount++,
+        delay: const Duration(milliseconds: 50),
+      );
+      final service = DailyPageService(client: client);
+      service.bindBookshelf(shelf);
+
+      final firstRefresh = service.refresh();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await shelf.addManual('在读书目', '作者');
+      await firstRefresh;
+      while (service.loading || fetchCount < 2) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+
+      expect(fetchCount, 2);
+      expect(service.discoveryMode, isFalse);
+      expect(service.pickedBook?.title, '在读书目');
+    });
+
     test('repicks when today book removed from reading queue', () async {
       final config = ReadingConfigService();
       await config.setStrategy(BookPickStrategy.roundRobin);
@@ -225,8 +308,10 @@ void main() {
       await service.refresh();
       final firstId = service.pickedBook!.id;
       await shelf.removeFromReading(firstId);
+      while (service.loading) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
 
-      await service.refresh();
       expect(service.pickedBook?.title, '第二本');
       expect(config.roundRobinIndex, 0);
     });
@@ -250,6 +335,68 @@ class _EchoBookClient extends DailyPageClient {
         date: DateTime(2026, 6, 7),
       ),
       pickedBook: book,
+    );
+  }
+}
+
+class _CountingClient extends DailyPageClient {
+  _CountingClient({required this.onFetch});
+
+  final void Function() onFetch;
+
+  @override
+  Future<DailyPageFetchResult> fetchWithMeta({
+    required String deviceId,
+    ShelfBook? book,
+    String? wereadCookie,
+    int nonce = 0,
+  }) async {
+    onFetch();
+    return DailyPageFetchResult(
+      reading: DailyPageReading(
+        bookTitle: book?.title ?? '探索书',
+        author: book?.author ?? '',
+        content: '摘录',
+        sourceNote: '',
+        date: DateTime(2026, 6, 7),
+      ),
+      pickedBook: book ??
+          ShelfBook(
+            id: 'discovery-1',
+            title: '探索书',
+          ),
+    );
+  }
+}
+
+class _DelayedCountingClient extends DailyPageClient {
+  _DelayedCountingClient({required this.onFetch, required this.delay});
+
+  final void Function() onFetch;
+  final Duration delay;
+
+  @override
+  Future<DailyPageFetchResult> fetchWithMeta({
+    required String deviceId,
+    ShelfBook? book,
+    String? wereadCookie,
+    int nonce = 0,
+  }) async {
+    onFetch();
+    await Future<void>.delayed(delay);
+    return DailyPageFetchResult(
+      reading: DailyPageReading(
+        bookTitle: book?.title ?? '探索书',
+        author: book?.author ?? '',
+        content: '摘录',
+        sourceNote: '',
+        date: DateTime(2026, 6, 7),
+      ),
+      pickedBook: book ??
+          ShelfBook(
+            id: 'discovery-1',
+            title: '探索书',
+          ),
     );
   }
 }

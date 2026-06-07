@@ -22,6 +22,7 @@ class DailyPageService extends ChangeNotifier {
   /// 当日已选书目日期，避免「刷新」重复 pickForToday 推进轮询
   String? _pickedDateKey;
   bool _loading = false;
+  bool _pendingReadingRefresh = false;
   String? _error;
   bool _disposed = false;
   String? _deviceId;
@@ -41,7 +42,43 @@ class DailyPageService extends ChangeNotifier {
   }
 
   void _onBookshelfChanged() {
+    if (_loading) {
+      if (_needsReadingRefresh(skipLoadingCheck: true)) {
+        _pendingReadingRefresh = true;
+      }
+      _notifyIfActive();
+      return;
+    }
+    if (_needsReadingRefresh()) {
+      unawaited(refresh());
+      return;
+    }
     _notifyIfActive();
+  }
+
+  /// 切回「今日」Tab 时，若仍展示探索模式残留则重拉在读书摘
+  void onHomeTabVisible() {
+    if (_loading) {
+      if (_needsReadingRefresh(skipLoadingCheck: true)) {
+        _pendingReadingRefresh = true;
+      }
+      _notifyIfActive();
+      return;
+    }
+    if (_needsReadingRefresh()) {
+      unawaited(refresh());
+      return;
+    }
+    _notifyIfActive();
+  }
+
+  /// 在读书队列变化后，若当前展示的不是队列中的书（如探索模式残留），自动重拉
+  bool _needsReadingRefresh({bool skipLoadingCheck = false}) {
+    if (!skipLoadingCheck && _loading) return false;
+    final queue = _bookshelf?.readingBooks ?? const [];
+    if (queue.isEmpty) return false;
+    if (_pickedBook == null) return true;
+    return !queue.any((b) => b.id == _pickedBook!.id);
   }
 
   void init(String deviceId) {
@@ -51,6 +88,9 @@ class DailyPageService extends ChangeNotifier {
 
   /// 探索模式：换一本随机书（不消耗每日首次配额）
   Future<void> switchBook() => refresh(switchBook: true);
+
+  /// 在读书模式：从队列选下一本（仍传 book_title）
+  Future<void> nextReadingBook() => refresh(switchBook: true);
 
   Future<void> refresh({ShelfBook? overrideBook, bool switchBook = false}) async {
     if (_loading) return;
@@ -66,8 +106,8 @@ class DailyPageService extends ChangeNotifier {
 
       final todayKey = _todayKey();
       ShelfBook? book = overrideBook;
-      if (book == null && hasReading && !switchBook) {
-        if (_canReuseTodayPick(todayKey)) {
+      if (book == null && hasReading) {
+        if (!switchBook && _canReuseTodayPick(todayKey)) {
           book = _pickedBook;
         } else {
           book = await _bookshelf!.pickForToday(todayKey);
@@ -92,8 +132,8 @@ class DailyPageService extends ChangeNotifier {
       );
 
       _page = result.reading;
-      _pickedBook = result.pickedBook;
-      if (hasReading && !switchBook && _pickedBook != null) {
+      _pickedBook = result.pickedBook ?? book;
+      if (hasReading && _pickedBook != null) {
         _pickedDateKey = todayKey;
       }
       _error = null;
@@ -103,6 +143,14 @@ class DailyPageService extends ChangeNotifier {
       _page = null;
       _loading = false;
       debugPrint('DailyPageService refresh failed: $e');
+    }
+
+    if (_pendingReadingRefresh && !_loading) {
+      _pendingReadingRefresh = false;
+      if (_needsReadingRefresh()) {
+        unawaited(refresh());
+        return;
+      }
     }
 
     _notifyIfActive();
