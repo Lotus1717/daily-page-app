@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:daily_page/screens/reading_page.dart';
 import 'package:daily_page/services/bookshelf_service.dart';
 import 'package:daily_page/services/reading_config_service.dart';
+
+import 'test_helpers.dart';
 
 void main() {
   late ReadingConfigService config;
   late BookshelfService shelf;
 
   setUp(() async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    SharedPreferences.setMockInitialValues({});
+    await initTestEnvironment();
     config = ReadingConfigService();
     await config.load();
     shelf = BookshelfService(config: config);
@@ -27,12 +27,6 @@ void main() {
         child: const ReadingPage(),
       ),
     );
-  }
-
-  /// _AddBookDialog 延迟 350ms 释放 controller，测试结束前需推进时钟
-  Future<void> settleDialogClose(WidgetTester tester) async {
-    await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 350));
   }
 
   group('ReadingPage add book dialog', () {
@@ -113,6 +107,93 @@ void main() {
 
       await tester.tap(find.text('取消'));
       await settleDialogClose(tester);
+    });
+  });
+
+  group('ReadingPage shelf interactions', () {
+    testWidgets('sync without cookie shows hint snackbar', (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('同步微信读书'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('请先在「我」中配置微信读书 Cookie'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('manual add auto-joins reading queue when slots available',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('添加'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, '书名'),
+        '队列测试书',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, '添加'));
+      await settleDialogClose(tester);
+
+      expect(find.text('在读书 1 / 3'), findsOneWidget);
+      expect(shelf.readingBooks.length, 1);
+      expect(shelf.readingBooks.first.title, '队列测试书');
+    });
+
+    testWidgets('add idle book to reading queue via card button',
+        (tester) async {
+      for (var i = 0; i < 3; i++) {
+        await shelf.addManual('在读书$i', '作者');
+      }
+      await shelf.addManual('待加入', '作者');
+      await shelf.removeFromReading(shelf.books.first.id);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('在读书 2 / 3'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('待加入'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      final idleRow = find.ancestor(
+        of: find.text('待加入'),
+        matching: find.byType(Row),
+      ).first;
+      await tester.tap(
+        find.descendant(
+          of: idleRow,
+          matching: find.byIcon(Icons.add_circle_outline),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('在读书 3 / 3'), findsOneWidget);
+      expect(
+        shelf.readingBooks.any((b) => b.title == '待加入'),
+        isTrue,
+      );
+    });
+
+    testWidgets('remove from reading queue via card button', (tester) async {
+      await shelf.addManual('待移除', '作者');
+      await shelf.addToReading(shelf.books.first.id);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('在读书 1 / 3'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.remove_circle_outline));
+      await tester.pumpAndSettle();
+
+      expect(shelf.readingBooks, isEmpty);
+      expect(find.text('在读书 0 / 3'), findsOneWidget);
     });
   });
 }

@@ -33,10 +33,17 @@ class ReflectionView extends StatelessWidget {
                       color: AppTheme.accent)),
               const Spacer(),
               if (onEdit != null)
-                GestureDetector(
-                  onTap: onEdit,
-                  child: Icon(Icons.edit_outlined,
-                      size: 16, color: AppTheme.textMuted),
+                IconButton(
+                  onPressed: onEdit,
+                  tooltip: '编辑感想',
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  icon: const Icon(Icons.edit_outlined,
+                      size: 18, color: AppTheme.textMuted),
                 ),
             ],
           ),

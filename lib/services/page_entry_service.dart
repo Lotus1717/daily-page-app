@@ -11,9 +11,37 @@ class PageEntryService extends ChangeNotifier {
 
   Map<String, PageEntry> _entries = {};
 
-  bool hasWrittenToday(String dateKey) => _entries.containsKey(dateKey);
+  /// Storage key: one entry per date + book title.
+  static String storageKey(String dateKey, {String? bookTitle}) {
+    if (bookTitle != null && bookTitle.isNotEmpty) {
+      return '$dateKey|$bookTitle';
+    }
+    return dateKey;
+  }
 
-  PageEntry? entryFor(String dateKey) => _entries[dateKey];
+  bool hasWrittenToday(String dateKey) =>
+      _entries.keys.any((k) => k == dateKey || k.startsWith('$dateKey|'));
+
+  bool hasWrittenFor(String dateKey, {String? bookTitle}) =>
+      entryFor(dateKey, bookTitle: bookTitle) != null;
+
+  PageEntry? entryFor(String dateKey, {String? bookTitle}) {
+    if (bookTitle != null && bookTitle.isNotEmpty) {
+      final composite = storageKey(dateKey, bookTitle: bookTitle);
+      if (_entries.containsKey(composite)) return _entries[composite];
+
+      // Legacy: single entry stored under dateKey only.
+      final legacy = _entries[dateKey];
+      if (legacy != null &&
+          (legacy.bookTitle == null ||
+              legacy.bookTitle!.isEmpty ||
+              legacy.bookTitle == bookTitle)) {
+        return legacy;
+      }
+      return null;
+    }
+    return _entries[dateKey];
+  }
 
   List<PageEntry> get allSorted {
     final list = _entries.values.toList()
@@ -29,8 +57,10 @@ class PageEntryService extends ChangeNotifier {
       final raw = prefs.getString(_key);
       if (raw == null || raw.isEmpty) return;
       final map = jsonDecode(raw) as Map<String, dynamic>;
-      _entries = map.map((k, v) =>
-          MapEntry(k, PageEntry.fromJson(v as Map<String, dynamic>)));
+      _entries = map.map((k, v) => MapEntry(
+            k,
+            PageEntry.fromJson(v as Map<String, dynamic>, storageKey: k),
+          ));
       notifyListeners();
     } catch (e) {
       debugPrint('Load entries failed: $e');
@@ -42,20 +72,24 @@ class PageEntryService extends ChangeNotifier {
     String reflection, {
     String? bookTitle,
     String? author,
+    String? sourceNote,
   }) async {
-    _entries[dateKey] = PageEntry(
+    final id = storageKey(dateKey, bookTitle: bookTitle);
+    _entries[id] = PageEntry(
+      id: id,
       dateKey: dateKey,
       reflection: reflection,
       createdAt: DateTime.now(),
       bookTitle: bookTitle,
       author: author,
+      sourceNote: sourceNote,
     );
     await _persist();
     notifyListeners();
   }
 
-  Future<void> delete(String dateKey) async {
-    _entries.remove(dateKey);
+  Future<void> delete(String id) async {
+    _entries.remove(id);
     await _persist();
     notifyListeners();
   }

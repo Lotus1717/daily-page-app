@@ -21,6 +21,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _cookieCtrl = TextEditingController();
   bool _hasCookie = false;
+  List<String> _savedKeys = [];
 
   @override
   void initState() {
@@ -31,7 +32,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadCookie() async {
     final cookie = await WeReadConfigStore.getCookie();
     if (cookie != null) _cookieCtrl.text = cookie;
-    setState(() => _hasCookie = cookie != null && cookie.isNotEmpty);
+    setState(() {
+      _hasCookie = cookie != null && cookie.isNotEmpty;
+      _savedKeys = WeReadConfigStore.keysFromSaved(cookie);
+    });
   }
 
   @override
@@ -43,11 +47,26 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _saveCookie() async {
     final cookie = _cookieCtrl.text.trim();
     if (cookie.isEmpty) return;
+
+    final validation = WeReadConfigStore.validate(cookie);
+    if (!validation.isValid) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validation.error!)),
+      );
+      return;
+    }
+
     await WeReadConfigStore.saveCookie(cookie);
-    setState(() => _hasCookie = true);
+    _cookieCtrl.text = validation.normalized!;
+    setState(() {
+      _hasCookie = true;
+      _savedKeys = validation.savedKeys;
+    });
     if (!mounted) return;
+    final keyHint = validation.savedKeys.join('、');
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Cookie 已保存')),
+      SnackBar(content: Text('Cookie 已保存（字段：$keyHint）')),
     );
   }
 
@@ -138,12 +157,22 @@ class _ProfilePageState extends State<ProfilePage> {
                         _hasCookie ? AppTheme.highlight : AppTheme.textMuted,
                   ),
                 ),
+                if (_savedKeys.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '已保存字段：${_savedKeys.join('、')}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 TextField(
                   controller: _cookieCtrl,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'wr_vid=...; wr_skey=...',
+                    hintText: 'wr_vid=...; wr_skey=...; wr_rt=...',
                     filled: true,
                     fillColor: AppTheme.bg,
                     border: OutlineInputBorder(
@@ -167,7 +196,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'weread.qq.com 登录 → F12 → Cookies → 复制 wr_vid、wr_skey',
+                  '1. 电脑浏览器打开 weread.qq.com 并微信扫码登录\n'
+                  '2. F12 → Application → Cookies → https://weread.qq.com\n'
+                  '3. 建议粘贴完整 Cookie（至少含 wr_vid、wr_skey；wr_rt 等会一并保留）\n'
+                  '4. 保存时仅规范化格式，不丢弃字段；上方显示已保存的 key 名称\n'
+                  '5. 同步失败多为 Cookie 过期或服务端未更新，请重新登录后再试',
                   style: TextStyle(
                       fontSize: 11, color: AppTheme.textMuted, height: 1.5),
                 ),

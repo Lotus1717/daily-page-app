@@ -51,8 +51,9 @@ class HistoryPage extends StatelessWidget {
                 bookLabel: entry.bookTitle != null
                     ? '${entry.bookTitle}${entry.author != null ? ' · ${entry.author}' : ''}'
                     : null,
+                chapterLabel: entry.sourceNote,
                 reflection: entry.reflection,
-                onDelete: () => _confirmDelete(context, svc, entry.dateKey),
+                onDelete: () => _confirmDelete(context, svc, entry.id),
               );
             },
           );
@@ -64,7 +65,7 @@ class HistoryPage extends StatelessWidget {
   Future<void> _confirmDelete(
     BuildContext context,
     PageEntryService svc,
-    String dateKey,
+    String entryId,
   ) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -84,7 +85,7 @@ class HistoryPage extends StatelessWidget {
       ),
     );
     if (ok == true && context.mounted) {
-      await svc.delete(dateKey);
+      await svc.delete(entryId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('已删除')),
@@ -97,11 +98,13 @@ class HistoryPage extends StatelessWidget {
 class _HistoryCard extends StatelessWidget {
   final String dateLabel;
   final String? bookLabel;
+  final String? chapterLabel;
   final String reflection;
   final VoidCallback onDelete;
   const _HistoryCard({
     required this.dateLabel,
     required this.bookLabel,
+    required this.chapterLabel,
     required this.reflection,
     required this.onDelete,
   });
@@ -134,6 +137,22 @@ class _HistoryCard extends StatelessWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.textDark)),
+                ],
+                if (chapterLabel != null && chapterLabel!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(chapterLabel!,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontStyle: FontStyle.italic,
+                            color: AppTheme.accent)),
+                  ),
                 ],
                 const SizedBox(height: 6),
                 Text(reflection,

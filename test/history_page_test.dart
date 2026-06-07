@@ -1,0 +1,50 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:daily_page/screens/history_page.dart';
+
+import 'test_helpers.dart';
+
+void main() {
+  setUp(() async {
+    await initTestEnvironment();
+  });
+
+  group('HistoryPage', () {
+    testWidgets('shows book and chapter on history card', (tester) async {
+      final services = await createTestServices();
+      await services.entrySvc.save(
+        '2026-06-07',
+        '很有感触的一段话',
+        bookTitle: '三体',
+        author: '刘慈欣',
+        sourceNote: '第三章',
+      );
+
+      await tester.pumpWidget(services.wrap(const HistoryPage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('三体 · 刘慈欣'), findsOneWidget);
+      expect(find.text('第三章'), findsOneWidget);
+      expect(find.text('很有感触的一段话'), findsOneWidget);
+    });
+
+    testWidgets('hides chapter when legacy entry has no sourceNote',
+        (tester) async {
+      final services = await createTestServices();
+      await services.entrySvc.save(
+        '2026-06-07',
+        '旧数据感想',
+        bookTitle: '测试书',
+        author: '作者',
+      );
+
+      await tester.pumpWidget(services.wrap(const HistoryPage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('测试书 · 作者'), findsOneWidget);
+      expect(find.text('旧数据感想'), findsOneWidget);
+      expect(find.text('节选'), findsNothing);
+    });
+  });
+}

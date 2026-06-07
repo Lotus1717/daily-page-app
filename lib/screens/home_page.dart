@@ -70,8 +70,10 @@ class _HomePageState extends State<HomePage> {
     final pageSvc = context.watch<DailyPageService>();
     final shelfSvc = context.watch<BookshelfService>();
     final promptSvc = context.watch<ReflectionPromptService>();
-    final hasWritten = entrySvc.hasWrittenToday(_dateKey);
-    final entry = entrySvc.entryFor(_dateKey);
+    final bookTitle = pageSvc.page?.bookTitle;
+    final hasWritten =
+        entrySvc.hasWrittenFor(_dateKey, bookTitle: bookTitle);
+    final entry = entrySvc.entryFor(_dateKey, bookTitle: bookTitle);
     final stats = ReadingStats.fromEntries(entrySvc.allSorted);
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final showReflectionSaveBar = !hasWritten &&
@@ -231,6 +233,7 @@ class _HomePageState extends State<HomePage> {
           text,
           bookTitle: page?.bookTitle,
           author: page?.author,
+          sourceNote: page?.sourceNote,
         );
     _controller.clear();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -239,7 +242,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _editReflection(BuildContext context) {
-    final entry = context.read<PageEntryService>().entryFor(_dateKey);
+    final page = context.read<DailyPageService>().page;
+    final entry = context.read<PageEntryService>().entryFor(
+          _dateKey,
+          bookTitle: page?.bookTitle,
+        );
     final ctrl = TextEditingController(text: entry?.reflection ?? '');
     showModalBottomSheet(
       context: context,
@@ -287,6 +294,7 @@ class _HomePageState extends State<HomePage> {
                         t,
                         bookTitle: entry?.bookTitle ?? page?.bookTitle,
                         author: entry?.author ?? page?.author,
+                        sourceNote: entry?.sourceNote ?? page?.sourceNote,
                       );
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(

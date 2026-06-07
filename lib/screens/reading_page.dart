@@ -19,6 +19,13 @@ class ReadingPage extends StatefulWidget {
 class _ReadingPageState extends State<ReadingPage> {
   bool _syncing = false;
 
+  String _formatSyncError(Object error) {
+    var msg = error.toString();
+    const prefix = 'Exception: ';
+    if (msg.startsWith(prefix)) msg = msg.substring(prefix.length);
+    return msg;
+  }
+
   Future<void> _syncFromWeRead() async {
     final cookie = await WeReadConfigStore.getCookie();
     if (cookie == null || cookie.isEmpty) {
@@ -40,7 +47,7 @@ class _ReadingPageState extends State<ReadingPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('同步失败：$e')),
+        SnackBar(content: Text('同步失败：${_formatSyncError(e)}')),
       );
     } finally {
       if (mounted) setState(() => _syncing = false);
