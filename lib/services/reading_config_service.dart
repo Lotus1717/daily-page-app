@@ -28,21 +28,23 @@ class ReadingConfigService extends ChangeNotifier {
   }
 
   Future<void> setStrategy(BookPickStrategy strategy) async {
+    if (_strategy == strategy) return;
     _strategy = strategy;
+    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_strategyKey, strategy.name);
-    notifyListeners();
   }
 
   Future<void> setManualBookId(String? bookId) async {
+    if (_manualBookId == bookId) return;
     _manualBookId = bookId;
+    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     if (bookId == null) {
       await prefs.remove(_manualBookIdKey);
     } else {
       await prefs.setString(_manualBookIdKey, bookId);
     }
-    notifyListeners();
   }
 
   Future<void> saveRoundRobinIndex(int index) async {

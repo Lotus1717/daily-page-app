@@ -11,7 +11,7 @@ class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('历史记录')),
+      appBar: AppBar(title: const Text('感想记录')),
       body: Consumer<PageEntryService>(
         builder: (context, svc, _) {
           final entries = svc.allSorted;

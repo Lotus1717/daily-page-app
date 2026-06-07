@@ -34,6 +34,7 @@ Future<void> main() async {
     pageSvc: pageSvc,
     entrySvc: entrySvc,
     shelfSvc: shelfSvc,
+    configSvc: configSvc,
     promptSvc: promptSvc,
   ));
 }
@@ -44,12 +45,14 @@ class DailyPageApp extends StatelessWidget {
     required this.pageSvc,
     required this.entrySvc,
     required this.shelfSvc,
+    required this.configSvc,
     required this.promptSvc,
   });
 
   final DailyPageService pageSvc;
   final PageEntryService entrySvc;
   final BookshelfService shelfSvc;
+  final ReadingConfigService configSvc;
   final ReflectionPromptService promptSvc;
 
   @override
@@ -59,6 +62,7 @@ class DailyPageApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: pageSvc),
         ChangeNotifierProvider.value(value: entrySvc),
         ChangeNotifierProvider.value(value: shelfSvc),
+        ChangeNotifierProvider.value(value: configSvc),
         ChangeNotifierProvider.value(value: promptSvc),
       ],
       child: MaterialApp(

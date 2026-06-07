@@ -32,6 +32,7 @@ void main() {
         pageSvc: pageSvc,
         entrySvc: entrySvc,
         shelfSvc: shelfSvc,
+        configSvc: configSvc,
         promptSvc: promptSvc,
       ),
     );

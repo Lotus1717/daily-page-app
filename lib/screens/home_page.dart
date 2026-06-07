@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../config/app_branding.dart';
 import '../config/theme.dart';
-import '../models/reading_stats.dart';
 import '../services/bookshelf_service.dart';
 import '../services/daily_page_service.dart';
 import '../services/page_entry_service.dart';
@@ -74,7 +73,6 @@ class _HomePageState extends State<HomePage> {
     final hasWritten =
         entrySvc.hasWrittenFor(_dateKey, bookTitle: bookTitle);
     final entry = entrySvc.entryFor(_dateKey, bookTitle: bookTitle);
-    final stats = ReadingStats.fromEntries(entrySvc.allSorted);
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final showReflectionSaveBar = !hasWritten &&
         pageSvc.page != null &&
@@ -85,15 +83,6 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text(AppBranding.name),
         actions: [
-          if (stats.currentStreak > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: Center(
-                child: Text('🔥 ${stats.currentStreak}',
-                    style: const TextStyle(
-                        fontSize: 13, color: AppTheme.accent)),
-              ),
-            ),
           if (pageSvc.discoveryMode)
             TextButton.icon(
               onPressed: pageSvc.loading ? null : () {
@@ -250,6 +239,7 @@ class _HomePageState extends State<HomePage> {
     final ctrl = TextEditingController(text: entry?.reflection ?? '');
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

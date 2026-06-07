@@ -10,7 +10,9 @@ import 'reading_config_service.dart';
 /// 书架与在读书队列管理
 class BookshelfService extends ChangeNotifier {
   BookshelfService({ReadingConfigService? config})
-      : _config = config ?? ReadingConfigService();
+      : _config = config ?? ReadingConfigService() {
+    _config.addListener(notifyListeners);
+  }
 
   static const _key = 'daily_page_bookshelf';
 

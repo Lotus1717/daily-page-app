@@ -75,44 +75,32 @@ class _ProfilePageState extends State<ProfilePage> {
     final entries = context.watch<PageEntryService>().allSorted;
     final stats = ReadingStats.fromEntries(entries);
     final shelf = context.watch<BookshelfService>();
-    final config = shelf.config;
+    final config = context.watch<ReadingConfigService>();
+
+    void openReflectionHistory() {
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(builder: (_) => const HistoryPage()),
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('我'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history_rounded),
-            tooltip: '历史记录',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HistoryPage()),
-            ),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('我')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
           _StreakSummary(stats: stats),
+          const SizedBox(height: 12),
+          _ReflectionHistoryEntry(
+            count: entries.length,
+            onTap: openReflectionHistory,
+          ),
           const SizedBox(height: 20),
           _SectionTitle(title: '选书策略', icon: Icons.shuffle_rounded),
           const SizedBox(height: 8),
-          ...BookPickStrategy.values.map(
-            (s) => RadioListTile<BookPickStrategy>(
-              value: s,
-              groupValue: config.strategy,
-              onChanged: (v) {
-                if (v != null) config.setStrategy(v);
-              },
-              title: Text(s.label, style: const TextStyle(fontSize: 14)),
-              subtitle: Text(
-                _strategyHint(s),
-                style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
-              ),
-              activeColor: AppTheme.highlight,
-              contentPadding: EdgeInsets.zero,
-            ),
+          _StrategyPicker(
+            selected: config.strategy,
+            onSelect: config.setStrategy,
+            hintFor: _strategyHint,
           ),
           if (config.strategy == BookPickStrategy.manual) ...[
             const SizedBox(height: 8),
@@ -248,6 +236,146 @@ class _ManualBookPicker extends StatelessWidget {
           checkmarkColor: AppTheme.highlight,
         );
       }).toList(),
+    );
+  }
+}
+
+class _StrategyPicker extends StatelessWidget {
+  final BookPickStrategy selected;
+  final ValueChanged<BookPickStrategy> onSelect;
+  final String Function(BookPickStrategy) hintFor;
+
+  const _StrategyPicker({
+    required this.selected,
+    required this.onSelect,
+    required this.hintFor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: BookPickStrategy.values.map((strategy) {
+        final isSelected = strategy == selected;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: isSelected ? AppTheme.highlightLight : AppTheme.card,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () => onSelect(strategy),
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppTheme.highlight
+                        : AppTheme.textLight.withValues(alpha: 0.35),
+                    width: isSelected ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(strategy.label,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              )),
+                          const SizedBox(height: 2),
+                          Text(hintFor(strategy),
+                              style: const TextStyle(
+                                  fontSize: 11, color: AppTheme.textMuted)),
+                        ],
+                      ),
+                    ),
+                    if (isSelected)
+                      const Icon(Icons.check_circle_rounded,
+                          size: 20, color: AppTheme.highlight),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _ReflectionHistoryEntry extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+
+  const _ReflectionHistoryEntry({
+    required this.count,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = count > 0
+        ? '共 $count 条，点击查看'
+        : '还没有记录，去「今日」写一句吧';
+
+    return Material(
+      color: AppTheme.card,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            boxShadow: AppTheme.cardShadow,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppTheme.highlightLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.edit_note_rounded,
+                      size: 24, color: AppTheme.highlight),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('感想记录',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          style: const TextStyle(
+                              fontSize: 12, color: AppTheme.textMuted)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded,
+                    color: AppTheme.textLight),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

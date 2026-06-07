@@ -76,6 +76,7 @@ class TestServices {
         ChangeNotifierProvider.value(value: pageSvc),
         ChangeNotifierProvider.value(value: entrySvc),
         ChangeNotifierProvider.value(value: shelfSvc),
+        ChangeNotifierProvider.value(value: configSvc),
         ChangeNotifierProvider.value(value: promptSvc),
       ],
       child: MaterialApp(home: child),
@@ -87,6 +88,7 @@ class TestServices {
       pageSvc: pageSvc,
       entrySvc: entrySvc,
       shelfSvc: shelfSvc,
+      configSvc: configSvc,
       promptSvc: promptSvc,
     );
   }

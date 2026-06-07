@@ -140,5 +140,15 @@ void main() {
       expect(updated.source, ShelfBookSource.weread);
       expect(updated.bookId, 'wr-1');
     });
+
+    test('notifies listeners when reading config strategy changes', () async {
+      var notifications = 0;
+      shelf.addListener(() => notifications++);
+
+      await config.setStrategy(BookPickStrategy.random);
+
+      expect(notifications, 1);
+      expect(shelf.config.strategy, BookPickStrategy.random);
+    });
   });
 }

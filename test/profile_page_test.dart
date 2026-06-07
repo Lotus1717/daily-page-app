@@ -63,17 +63,29 @@ void main() {
       expect(find.text('已保存字段：wr_vid、wr_skey、wr_rt'), findsOneWidget);
     });
 
-    testWidgets('history button navigates to HistoryPage', (tester) async {
+    testWidgets('reflection entry card navigates to HistoryPage', (tester) async {
       final services = await createTestServices();
 
       await tester.pumpWidget(services.wrap(const ProfilePage()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('历史记录'));
+      expect(find.text('还没有记录，去「今日」写一句吧'), findsOneWidget);
+
+      await tester.tap(find.text('感想记录'));
       await tester.pumpAndSettle();
 
       expect(find.byType(HistoryPage), findsOneWidget);
       expect(find.textContaining('还没有记录'), findsOneWidget);
+    });
+
+    testWidgets('reflection entry shows saved count', (tester) async {
+      final services = await createTestServices();
+      await services.entrySvc.save('2026-06-07', '一条感想', bookTitle: '测试书');
+
+      await tester.pumpWidget(services.wrap(const ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('共 1 条，点击查看'), findsOneWidget);
     });
 
     testWidgets('strategy radio switches pick mode', (tester) async {
@@ -88,6 +100,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(services.configSvc.strategy, BookPickStrategy.random);
+      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
 
       await tester.scrollUntilVisible(
         find.text('手动指定'),
@@ -98,6 +111,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(services.configSvc.strategy, BookPickStrategy.manual);
+      expect(find.text('在下方指定今日要读的书'), findsOneWidget);
     });
 
     testWidgets('invalid cookie shows validation snackbar', (tester) async {
