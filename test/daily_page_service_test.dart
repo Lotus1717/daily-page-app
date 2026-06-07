@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:daily_page/models/book_pick_strategy.dart';
 import 'package:daily_page/models/daily_page_reading.dart';
 import 'package:daily_page/models/shelf_book.dart';
 import 'package:daily_page/services/bookshelf_service.dart';
@@ -150,7 +151,107 @@ void main() {
       expect(service.discoveryMode, isFalse);
       expect(service.pickedBook?.title, '在读书目');
     });
+
+    test('discoveryMode reflects bookshelf without waiting for refresh', () async {
+      final config = ReadingConfigService();
+      await config.load();
+      final shelf = BookshelfService(config: config);
+      await shelf.load();
+
+      final service = DailyPageService(
+        client: _FakeDailyPageClient(
+          result: DailyPageFetchResult(
+            reading: DailyPageReading(
+              bookTitle: '随机书',
+              author: '作者',
+              content: '内容',
+              sourceNote: '',
+              date: DateTime(2026, 6, 7),
+            ),
+          ),
+        ),
+      );
+      service.bindBookshelf(shelf);
+
+      expect(service.discoveryMode, isTrue);
+      await shelf.addManual('在读书目', '作者');
+      expect(service.discoveryMode, isFalse);
+    });
+
+    test('refresh reuses today pick without advancing roundRobin', () async {
+      final config = ReadingConfigService();
+      await config.setStrategy(BookPickStrategy.roundRobin);
+      final shelf = BookshelfService(config: config);
+      await shelf.load();
+      await shelf.addManual('第一本', '');
+      await shelf.addManual('第二本', '');
+
+      final reading = DailyPageReading(
+        bookTitle: '第一本',
+        author: '',
+        content: '摘录',
+        sourceNote: '',
+        date: DateTime(2026, 6, 7),
+      );
+      final client = _FakeDailyPageClient(
+        result: DailyPageFetchResult(
+          reading: reading,
+          pickedBook: shelf.readingBooks.first,
+        ),
+      );
+      final service = DailyPageService(client: client);
+      service.bindBookshelf(shelf);
+
+      await service.refresh();
+      expect(config.roundRobinIndex, 1);
+      expect(service.pickedBook?.title, '第一本');
+
+      await service.refresh();
+      expect(config.roundRobinIndex, 1);
+      expect(service.pickedBook?.title, '第一本');
+    });
+
+    test('repicks when today book removed from reading queue', () async {
+      final config = ReadingConfigService();
+      await config.setStrategy(BookPickStrategy.roundRobin);
+      final shelf = BookshelfService(config: config);
+      await shelf.load();
+      await shelf.addManual('第一本', '');
+      await shelf.addManual('第二本', '');
+
+      final service = DailyPageService(client: _EchoBookClient());
+      service.bindBookshelf(shelf);
+
+      await service.refresh();
+      final firstId = service.pickedBook!.id;
+      await shelf.removeFromReading(firstId);
+
+      await service.refresh();
+      expect(service.pickedBook?.title, '第二本');
+      expect(config.roundRobinIndex, 0);
+    });
   });
+}
+
+class _EchoBookClient extends DailyPageClient {
+  @override
+  Future<DailyPageFetchResult> fetchWithMeta({
+    required String deviceId,
+    ShelfBook? book,
+    String? wereadCookie,
+    int nonce = 0,
+  }) async {
+    return DailyPageFetchResult(
+      reading: DailyPageReading(
+        bookTitle: book?.title ?? '探索',
+        author: book?.author ?? '',
+        content: '摘录',
+        sourceNote: '',
+        date: DateTime(2026, 6, 7),
+      ),
+      pickedBook: book,
+    );
+  }
 }
 
 class _CapturingClient extends DailyPageClient {

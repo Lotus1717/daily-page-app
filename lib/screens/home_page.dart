@@ -55,6 +55,7 @@ class _HomePageState extends State<HomePage> {
 
     final key = '${page.bookTitle}:${page.content.hashCode}';
     if (_lastPromptKey == key) return;
+    if (_lastPromptKey != null) _controller.clear();
     _lastPromptKey = key;
     promptSvc.fetchQuestion(
       deviceId: pageSvc.deviceId ?? 'local',
