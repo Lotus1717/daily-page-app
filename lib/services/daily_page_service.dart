@@ -55,10 +55,11 @@ class DailyPageService extends ChangeNotifier {
       final hasWeRead = cookie != null && cookie.isNotEmpty;
       final hasReading = _bookshelf?.hasReadingBooks ?? false;
 
-      _discoveryMode = !hasWeRead || !hasReading;
+      // 探索模式：没有在读书队列；手动添加的书无 book_id，走 DeepSeek 指定书目
+      _discoveryMode = !hasReading;
 
       ShelfBook? book = overrideBook;
-      if (!switchBook && book == null && hasWeRead && hasReading) {
+      if (!switchBook && book == null && hasReading) {
         book = await _bookshelf!.pickForToday(_todayKey());
       }
 

@@ -57,6 +57,32 @@ void main() {
       expect(find.textContaining('还没有记录'), findsOneWidget);
     });
 
+    testWidgets('shows multiple entries from same day', (tester) async {
+      final services = await createTestServices();
+      await services.entrySvc.save(
+        '2026-06-07',
+        '第一本感想',
+        bookTitle: '书A',
+        author: '作者A',
+      );
+      await services.entrySvc.save(
+        '2026-06-07',
+        '第二本感想',
+        bookTitle: '书B',
+        author: '作者B',
+        sourceNote: '第十章',
+      );
+
+      await tester.pumpWidget(services.wrap(const HistoryPage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('第一本感想'), findsOneWidget);
+      expect(find.text('第二本感想'), findsOneWidget);
+      expect(find.text('书A · 作者A'), findsOneWidget);
+      expect(find.text('书B · 作者B'), findsOneWidget);
+      expect(find.text('第十章'), findsOneWidget);
+    });
+
     testWidgets('delete button removes entry', (tester) async {
       final services = await createTestServices();
       await services.entrySvc.save(

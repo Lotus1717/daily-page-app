@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 
 import 'package:daily_page/models/book_pick_strategy.dart';
 import 'package:daily_page/screens/history_page.dart';
@@ -112,6 +113,26 @@ void main() {
 
       expect(services.configSvc.strategy, BookPickStrategy.manual);
       expect(find.text('在下方指定今日要读的书'), findsOneWidget);
+    });
+
+    testWidgets('displays reading stats from saved entries', (tester) async {
+      final services = await createTestServices();
+      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      await services.entrySvc.save(today, '今日感想', bookTitle: '测试书');
+      await services.entrySvc.save(
+        DateFormat('yyyy-MM-dd')
+            .format(DateTime.now().subtract(const Duration(days: 1))),
+        '昨日感想',
+        bookTitle: '另一本',
+      );
+
+      await tester.pumpWidget(services.wrap(const ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 天'), findsOneWidget);
+      expect(find.textContaining('累计 2 天'), findsOneWidget);
+      expect(find.textContaining('读过 2 本书'), findsOneWidget);
+      expect(find.text('共 2 条，点击查看'), findsOneWidget);
     });
 
     testWidgets('invalid cookie shows validation snackbar', (tester) async {

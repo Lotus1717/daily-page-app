@@ -26,13 +26,29 @@ class WeReadService {
     final normalized = validation.normalized!;
 
     final uri = Uri.parse('${ServerConfig.baseUrl}${ServerConfig.wereadSyncPath}');
-    final response = await _http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'cookie': normalized}),
-        )
-        .timeout(Duration(seconds: ServerConfig.timeoutSeconds));
+    late final http.Response response;
+    try {
+      response = await _http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'cookie': normalized}),
+          )
+          .timeout(Duration(seconds: ServerConfig.timeoutSeconds));
+    } on Exception catch (e) {
+      final msg = e.toString();
+      if (msg.contains('Connection refused') ||
+          msg.contains('Failed host lookup') ||
+          msg.contains('Network is unreachable')) {
+        throw Exception(
+          '无法连接服务器 ${ServerConfig.baseUrl}，请检查手机网络或稍后重试',
+        );
+      }
+      if (msg.contains('TimeoutException') || msg.contains('timed out')) {
+        throw Exception('同步超时，请检查网络后重试');
+      }
+      rethrow;
+    }
 
     if (response.statusCode != 200) {
       throw Exception(_parseApiError(response.statusCode, response.body));

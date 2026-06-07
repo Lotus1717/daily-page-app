@@ -184,11 +184,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  '1. 电脑浏览器打开 weread.qq.com 并微信扫码登录\n'
-                  '2. F12 → Application → Cookies → https://weread.qq.com\n'
-                  '3. 建议粘贴完整 Cookie（至少含 wr_vid、wr_skey；wr_rt 等会一并保留）\n'
-                  '4. 保存时仅规范化格式，不丢弃字段；上方显示已保存的 key 名称\n'
-                  '5. 同步失败多为 Cookie 过期或服务端未更新，请重新登录后再试',
+                  '1. 电脑 Chrome 打开 weread.qq.com 并微信扫码登录\n'
+                  '2. 在书架随便点开一本书（激活会话）\n'
+                  '3. F12 → Application → Cookies → weread.qq.com\n'
+                  '4. 复制全部 Cookie（必须含 wr_vid、wr_skey，建议含 wr_rt）\n'
+                  '5. 粘贴后点「保存 Cookie」，再去「在读」点同步\n'
+                  '6. 若仍失败，重新登录 weread 后重复上述步骤',
                   style: TextStyle(
                       fontSize: 11, color: AppTheme.textMuted, height: 1.5),
                 ),

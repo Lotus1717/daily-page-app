@@ -207,5 +207,127 @@ void main() {
 
       expect(find.text('测试书'), findsOneWidget);
     });
+
+    testWidgets('discovery mode shows 随机探索 and 换一本', (tester) async {
+      final services = await createTestServices(preloadPage: true);
+
+      await tester.pumpWidget(services.wrap(const HomePage()));
+      await tester.pumpAndSettle();
+
+      expect(services.pageSvc.discoveryMode, isTrue);
+      expect(find.text('随机探索'), findsOneWidget);
+      expect(find.text('换一本'), findsOneWidget);
+      expect(find.byTooltip('刷新'), findsNothing);
+    });
+
+    testWidgets('normal mode shows strategy label and refresh button',
+        (tester) async {
+      final services = await createTestServices(
+        withReadingBook: true,
+        withCookie: true,
+        preloadPage: true,
+      );
+
+      await tester.pumpWidget(services.wrap(const HomePage()));
+      await tester.pumpAndSettle();
+
+      expect(services.pageSvc.discoveryMode, isFalse);
+      expect(find.text('轮询在读书'), findsOneWidget);
+      expect(find.byTooltip('刷新'), findsOneWidget);
+      expect(find.text('换一本'), findsNothing);
+    });
+
+    testWidgets('manual reading book loads excerpt from that book',
+        (tester) async {
+      final client = FakeDailyPageClient(
+        results: [
+          DailyPageFetchResult(
+            reading: DailyPageReading(
+              bookTitle: '在读书目',
+              author: '作者',
+              content: '手动书的摘录内容',
+              sourceNote: '第五章',
+              date: DateTime.now(),
+            ),
+          ),
+        ],
+      );
+      final services = await createTestServices(
+        pageClient: client,
+        withReadingBook: true,
+        preloadPage: true,
+      );
+
+      await tester.pumpWidget(services.wrap(const HomePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('在读书目'), findsOneWidget);
+      expect(find.text('手动书的摘录内容'), findsOneWidget);
+      expect(client.lastBook?.title, '在读书目');
+      expect(services.pageSvc.discoveryMode, isFalse);
+    });
+
+    testWidgets('switch book and save both reflections keeps two entries',
+        (tester) async {
+      final client = FakeDailyPageClient(
+        results: [
+          DailyPageFetchResult(
+            reading: DailyPageReading(
+              bookTitle: '第一本书',
+              author: '作者A',
+              content: '第一页',
+              sourceNote: '第一章',
+              date: DateTime.now(),
+            ),
+          ),
+          DailyPageFetchResult(
+            reading: DailyPageReading(
+              bookTitle: '第二本书',
+              author: '作者B',
+              content: '第二页',
+              sourceNote: '第二章',
+              date: DateTime.now(),
+            ),
+          ),
+        ],
+      );
+      final services = await createTestServices(
+        pageClient: client,
+        preloadPage: true,
+      );
+
+      await tester.pumpWidget(services.wrap(const HomePage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '第一本感想');
+      await tester.tap(find.widgetWithText(FilledButton, '记下来'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('换一本'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '第二本感想');
+      await tester.tap(find.widgetWithText(FilledButton, '记下来'));
+      await tester.pumpAndSettle();
+
+      final dateKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      expect(services.entrySvc.count, 2);
+      expect(
+        services.entrySvc.entryFor(dateKey, bookTitle: '第一本书')?.reflection,
+        '第一本感想',
+      );
+      expect(
+        services.entrySvc.entryFor(dateKey, bookTitle: '第一本书')?.sourceNote,
+        '第一章',
+      );
+      expect(
+        services.entrySvc.entryFor(dateKey, bookTitle: '第二本书')?.reflection,
+        '第二本感想',
+      );
+      expect(
+        services.entrySvc.entryFor(dateKey, bookTitle: '第二本书')?.sourceNote,
+        '第二章',
+      );
+    });
   });
 }

@@ -76,7 +76,46 @@ void main() {
       expect(service.error, '服务端未配置，请检查 DeepSeek Key');
     });
 
-    test('refresh picks book from bookshelf when configured', () async {
+    test('refresh picks manual book without weread cookie', () async {
+      final config = ReadingConfigService();
+      await config.load();
+      final shelf = BookshelfService(config: config);
+      await shelf.load();
+      await shelf.addManual('在读书目', '作者');
+
+      final reading = DailyPageReading(
+        bookTitle: '在读书目',
+        author: '作者',
+        content: '摘录',
+        sourceNote: '',
+        date: DateTime(2026, 6, 7),
+      );
+      ShelfBook? capturedBook;
+      String? capturedCookie;
+      final capturingClient = _CapturingClient(
+        result: DailyPageFetchResult(
+          reading: reading,
+          pickedBook: shelf.readingBooks.first,
+        ),
+        onFetch: (book, cookie) {
+          capturedBook = book;
+          capturedCookie = cookie;
+        },
+      );
+
+      final service = DailyPageService(client: capturingClient);
+      service.bindBookshelf(shelf);
+
+      await service.refresh();
+
+      expect(capturedBook?.title, '在读书目');
+      expect(capturedBook?.bookId, isNull);
+      expect(capturedCookie, isNull);
+      expect(service.discoveryMode, isFalse);
+      expect(service.pickedBook?.title, '在读书目');
+    });
+
+    test('refresh picks book from bookshelf when weread configured', () async {
       final config = ReadingConfigService();
       await config.load();
       final shelf = BookshelfService(config: config);
@@ -96,13 +135,12 @@ void main() {
           reading: reading,
           pickedBook: shelf.readingBooks.first,
         ),
-        onFetch: (book) => capturedBook = book,
+        onFetch: (book, _) => capturedBook = book,
       );
 
       final service = DailyPageService(client: capturingClient);
       service.bindBookshelf(shelf);
 
-      // Set cookie so hasWeRead is true
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('weread_cookie', 'sid=test');
 
@@ -119,7 +157,7 @@ class _CapturingClient extends DailyPageClient {
   _CapturingClient({required this.result, this.onFetch});
 
   final DailyPageFetchResult result;
-  final void Function(ShelfBook? book)? onFetch;
+  final void Function(ShelfBook? book, String? wereadCookie)? onFetch;
 
   @override
   Future<DailyPageFetchResult> fetchWithMeta({
@@ -128,7 +166,7 @@ class _CapturingClient extends DailyPageClient {
     String? wereadCookie,
     int nonce = 0,
   }) async {
-    onFetch?.call(book);
+    onFetch?.call(book, wereadCookie);
     return result;
   }
 }

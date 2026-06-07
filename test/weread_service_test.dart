@@ -74,6 +74,28 @@ void main() {
     await service.syncShelf('wr_rt=token; wr_vid=1; wr_skey=2');
   });
 
+  test('syncShelf maps connection refused to friendly message', () async {
+    final service = WeReadService(
+      httpClient: MockClient((_) async {
+        throw http.ClientException(
+          'Connection refused',
+          Uri.parse('http://175.178.249.107/v1/weread/sync'),
+        );
+      }),
+    );
+
+    expect(
+      () => service.syncShelf('wr_vid=1; wr_skey=2'),
+      throwsA(
+        predicate(
+          (e) =>
+              e is Exception &&
+              e.toString().contains('无法连接服务器'),
+        ),
+      ),
+    );
+  });
+
   test('syncShelf returns books on success', () async {
     final service = WeReadService(
       httpClient: MockClient(
