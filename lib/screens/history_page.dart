@@ -20,7 +20,7 @@ class HistoryPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.menu_book_outlined,
+                  Icon(Icons.history_rounded,
                       size: 48,
                       color: AppTheme.textLight.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
@@ -163,14 +163,17 @@ class _HistoryCard extends StatelessWidget {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: onDelete,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: Icon(Icons.delete_outline_rounded,
-                  size: 18,
-                  color: AppTheme.textLight.withValues(alpha: 0.6)),
+          IconButton(
+            onPressed: onDelete,
+            tooltip: '删除',
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(
+              minWidth: 40,
+              minHeight: 40,
             ),
+            icon: const Icon(Icons.delete_outline,
+                size: 20, color: AppTheme.textMuted),
           ),
         ],
       ),

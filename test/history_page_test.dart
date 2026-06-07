@@ -46,5 +46,40 @@ void main() {
       expect(find.text('旧数据感想'), findsOneWidget);
       expect(find.text('节选'), findsNothing);
     });
+
+    testWidgets('empty state uses history icon', (tester) async {
+      final services = await createTestServices();
+
+      await tester.pumpWidget(services.wrap(const HistoryPage()));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.history_rounded), findsOneWidget);
+      expect(find.textContaining('还没有记录'), findsOneWidget);
+    });
+
+    testWidgets('delete button removes entry', (tester) async {
+      final services = await createTestServices();
+      await services.entrySvc.save(
+        '2026-06-07',
+        '待删除感想',
+        bookTitle: '测试书',
+      );
+
+      await tester.pumpWidget(services.wrap(const HistoryPage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('待删除感想'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('删除'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('删除这条记录？'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TextButton, '删除'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('待删除感想'), findsNothing);
+      expect(find.text('已删除'), findsOneWidget);
+    });
   });
 }
