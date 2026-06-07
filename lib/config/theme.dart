@@ -59,6 +59,20 @@ class AppTheme {
         ),
         behavior: SnackBarBehavior.floating,
       ),
+      textButtonTheme: TextButtonThemeData(style: appBarActionStyle),
     );
   }
+
+  /// AppBar 右侧操作按钮：高对比度绿色，带图标+文字
+  static ButtonStyle get appBarActionStyle => TextButton.styleFrom(
+        foregroundColor: highlight,
+        disabledForegroundColor: highlight.withValues(alpha: 0.35),
+        textStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      );
 }

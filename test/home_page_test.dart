@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
+import 'package:daily_page/config/theme.dart';
 import 'package:daily_page/models/book_pick_strategy.dart';
 import 'package:daily_page/models/daily_page_reading.dart';
 import 'package:daily_page/screens/home_page.dart';
@@ -233,9 +234,32 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(services.pageSvc.discoveryMode, isFalse);
+      expect(services.shelfSvc.readingBooks.length, 1);
       expect(find.text('轮询在读书'), findsOneWidget);
       expect(find.text('再读一页'), findsOneWidget);
       expect(find.text('换一本'), findsNothing);
+      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+    });
+
+    testWidgets('single reading book uses highlight app bar action style',
+        (tester) async {
+      final services = await createTestServices(
+        withReadingBook: true,
+        withCookie: true,
+        preloadPage: true,
+      );
+
+      await tester.pumpWidget(services.wrap(const HomePage()));
+      await tester.pumpAndSettle();
+
+      final button = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, '再读一页'),
+      );
+      final style = button.style ?? AppTheme.appBarActionStyle;
+      expect(
+        style.foregroundColor?.resolve({}),
+        AppTheme.highlight,
+      );
     });
 
     testWidgets('manual reading book loads excerpt from that book',

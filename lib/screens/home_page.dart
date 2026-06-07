@@ -87,51 +87,61 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppBranding.name),
+        actionsIconTheme: const IconThemeData(
+          color: AppTheme.highlight,
+          size: 18,
+        ),
         actions: [
-          if (inDiscovery)
-            TextButton.icon(
-              onPressed: pageSvc.loading ? null : () {
-                _lastPromptKey = null;
-                promptSvc.reset();
-                pageSvc.switchBook().then((_) => _onPageUpdated());
-              },
-              icon: const Icon(Icons.shuffle_rounded, size: 18),
-              label: const Text('换一本'),
-            )
-          else ...[
-            if (readingCount > 1 &&
-                shelfSvc.config.strategy != BookPickStrategy.manual)
-              Tooltip(
-                message: '从在读书换一本',
-                child: TextButton.icon(
-                  onPressed: pageSvc.loading
-                      ? null
-                      : () {
-                          _lastPromptKey = null;
-                          promptSvc.reset();
-                          pageSvc
-                              .nextReadingBook()
-                              .then((_) => _onPageUpdated());
-                        },
-                  icon: const Icon(Icons.skip_next_rounded, size: 18),
-                  label: const Text('换一本'),
-                ),
-              ),
-            Tooltip(
-              message: '还是这本书，再拆一段',
-              child: TextButton.icon(
-                onPressed: pageSvc.loading
-                    ? null
-                    : () {
-                        _lastPromptKey = null;
-                        promptSvc.reset();
-                        pageSvc.refresh().then((_) => _onPageUpdated());
-                      },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('再读一页'),
-              ),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (inDiscovery)
+                  _HomeAppBarAction(
+                    onPressed: pageSvc.loading
+                        ? null
+                        : () {
+                            _lastPromptKey = null;
+                            promptSvc.reset();
+                            pageSvc.switchBook().then((_) => _onPageUpdated());
+                          },
+                    icon: Icons.shuffle_rounded,
+                    label: '换一本',
+                  )
+                else ...[
+                  if (readingCount > 1 &&
+                      shelfSvc.config.strategy != BookPickStrategy.manual)
+                    _HomeAppBarAction(
+                      tooltip: '从在读书换一本',
+                      onPressed: pageSvc.loading
+                          ? null
+                          : () {
+                              _lastPromptKey = null;
+                              promptSvc.reset();
+                              pageSvc
+                                  .nextReadingBook()
+                                  .then((_) => _onPageUpdated());
+                            },
+                      icon: Icons.skip_next_rounded,
+                      label: '换一本',
+                    ),
+                  _HomeAppBarAction(
+                    tooltip: '还是这本书，再拆一段',
+                    onPressed: pageSvc.loading
+                        ? null
+                        : () {
+                            _lastPromptKey = null;
+                            promptSvc.reset();
+                            pageSvc.refresh().then((_) => _onPageUpdated());
+                          },
+                    icon: Icons.refresh_rounded,
+                    label: '再读一页',
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
         ],
       ),
       body: SafeArea(
@@ -331,6 +341,32 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+}
+
+class _HomeAppBarAction extends StatelessWidget {
+  const _HomeAppBarAction({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    this.tooltip,
+  });
+
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = TextButton.icon(
+      style: AppTheme.appBarActionStyle,
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+    );
+    if (tooltip == null) return button;
+    return Tooltip(message: tooltip, child: button);
   }
 }
 
