@@ -1,0 +1,72 @@
+import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+
+import 'config/app_branding.dart';
+import 'config/theme.dart';
+import 'screens/main_shell.dart';
+import 'services/bookshelf_service.dart';
+import 'services/daily_page_service.dart';
+import 'services/device_id_store.dart';
+import 'services/page_entry_service.dart';
+import 'services/reading_config_service.dart';
+import 'services/reflection_prompt_service.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('zh_CN');
+
+  final configSvc = ReadingConfigService();
+  await configSvc.load();
+
+  final pageSvc = DailyPageService();
+  final entrySvc = PageEntryService();
+  final shelfSvc = BookshelfService(config: configSvc);
+  final promptSvc = ReflectionPromptService();
+  final deviceId = await DeviceIdStore.getOrCreate();
+
+  await entrySvc.load();
+  await shelfSvc.load();
+  pageSvc.bindBookshelf(shelfSvc);
+  pageSvc.init(deviceId);
+
+  runApp(DailyPageApp(
+    pageSvc: pageSvc,
+    entrySvc: entrySvc,
+    shelfSvc: shelfSvc,
+    promptSvc: promptSvc,
+  ));
+}
+
+class DailyPageApp extends StatelessWidget {
+  const DailyPageApp({
+    super.key,
+    required this.pageSvc,
+    required this.entrySvc,
+    required this.shelfSvc,
+    required this.promptSvc,
+  });
+
+  final DailyPageService pageSvc;
+  final PageEntryService entrySvc;
+  final BookshelfService shelfSvc;
+  final ReflectionPromptService promptSvc;
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: pageSvc),
+        ChangeNotifierProvider.value(value: entrySvc),
+        ChangeNotifierProvider.value(value: shelfSvc),
+        ChangeNotifierProvider.value(value: promptSvc),
+      ],
+      child: MaterialApp(
+        title: AppBranding.name,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: const MainShell(),
+      ),
+    );
+  }
+}
