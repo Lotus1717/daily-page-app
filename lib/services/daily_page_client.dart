@@ -17,12 +17,14 @@ class DailyPageClient {
     ShelfBook? book,
     String? wereadCookie,
     int nonce = 0,
+    List<String> excludeContents = const [],
   }) async {
     final reading = await _fetchFromServer(
       deviceId,
       book: book,
       wereadCookie: wereadCookie,
       nonce: nonce,
+      excludeContents: excludeContents,
     );
     return DailyPageFetchResult(
       reading: reading,
@@ -43,6 +45,7 @@ class DailyPageClient {
     ShelfBook? book,
     String? wereadCookie,
     int nonce = 0,
+    List<String> excludeContents = const [],
   }) async {
     final uri = Uri.parse('${ServerConfig.baseUrl}${ServerConfig.dailyPagePath}');
     final body = <String, dynamic>{
@@ -56,6 +59,12 @@ class DailyPageClient {
     }
     if (wereadCookie != null && wereadCookie.isNotEmpty) {
       body['weread_cookie'] = wereadCookie;
+    }
+    if (excludeContents.isNotEmpty) {
+      body['exclude_contents'] = excludeContents
+          .where((c) => c.trim().isNotEmpty)
+          .take(5)
+          .toList();
     }
 
     final response = await _http

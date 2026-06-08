@@ -26,6 +26,8 @@ class DailyPageService extends ChangeNotifier {
   String? _error;
   bool _disposed = false;
   String? _deviceId;
+  String? _passageHistoryBookKey;
+  final List<String> _passageHistory = [];
 
   DailyPageReading? get page => _page;
   ShelfBook? get pickedBook => _pickedBook;
@@ -142,6 +144,8 @@ class DailyPageService extends ChangeNotifier {
 
       final sendBook =
           inDiscovery && switchBook && !anotherPassage ? null : book;
+      _syncPassageHistoryBook(sendBook);
+      final excludeContents = anotherPassage ? _excludePassagesForRefresh() : const <String>[];
       debugPrint(
         'DailyPageService refresh: discovery=$inDiscovery switchBook=$switchBook '
         'anotherPassage=$anotherPassage '
@@ -153,9 +157,11 @@ class DailyPageService extends ChangeNotifier {
         book: sendBook,
         wereadCookie: hasWeRead ? cookie : null,
         nonce: nonce,
+        excludeContents: excludeContents,
       );
 
       _page = result.reading;
+      _rememberPassage(result.reading.content);
       _pickedBook = result.pickedBook ?? book;
       if (hasReading && _pickedBook != null) {
         _pickedDateKey = todayKey;
@@ -201,6 +207,33 @@ class DailyPageService extends ChangeNotifier {
 
   String _randomId() =>
       'daily-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
+
+  void _syncPassageHistoryBook(ShelfBook? book) {
+    final key = book?.id ?? book?.title ?? '';
+    if (key != _passageHistoryBookKey) {
+      _passageHistoryBookKey = key;
+      _passageHistory.clear();
+    }
+  }
+
+  void _rememberPassage(String content) {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty) return;
+    if (_passageHistory.contains(trimmed)) return;
+    _passageHistory.add(trimmed);
+    if (_passageHistory.length > 5) {
+      _passageHistory.removeAt(0);
+    }
+  }
+
+  List<String> _excludePassagesForRefresh() {
+    final excludes = List<String>.from(_passageHistory);
+    final current = _page?.content.trim();
+    if (current != null && current.isNotEmpty && !excludes.contains(current)) {
+      excludes.add(current);
+    }
+    return excludes;
+  }
 
   void _notifyIfActive() {
     if (!_disposed) notifyListeners();

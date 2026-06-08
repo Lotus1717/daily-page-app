@@ -27,6 +27,7 @@ class FakeDailyPageClient extends DailyPageClient {
   int fetchCount = 0;
   int lastNonce = -1;
   ShelfBook? lastBook;
+  List<String> lastExcludeContents = const [];
 
   DailyPageFetchResult get _defaultResult => DailyPageFetchResult(
         reading: DailyPageReading(
@@ -44,10 +45,12 @@ class FakeDailyPageClient extends DailyPageClient {
     ShelfBook? book,
     String? wereadCookie,
     int nonce = 0,
+    List<String> excludeContents = const [],
   }) async {
     fetchCount++;
     lastNonce = nonce;
     lastBook = book;
+    lastExcludeContents = excludeContents;
     if (error != null) throw error!;
     if (results.isEmpty) return _defaultResult;
     return results[(fetchCount - 1).clamp(0, results.length - 1)];

@@ -20,6 +20,7 @@ class _FakeDailyPageClient extends DailyPageClient {
     ShelfBook? book,
     String? wereadCookie,
     int nonce = 0,
+    List<String> excludeContents = const [],
   }) async {
     if (error != null) throw error!;
     return result!;
@@ -344,7 +345,47 @@ void main() {
 
       expect(service.pickedBook?.title, '第二本');
     });
+
+    test('readAnotherPassage sends prior page as exclude_contents', () async {
+      final client = _ExcludeCapturingClient();
+      final service = DailyPageService(client: client);
+
+      await service.refresh();
+      expect(service.page?.content, '第一页内容');
+
+      await service.readAnotherPassage();
+
+      expect(client.lastExcludeContents, contains('第一页内容'));
+      expect(client.lastNonce, greaterThan(0));
+    });
   });
+}
+
+class _ExcludeCapturingClient extends DailyPageClient {
+  int lastNonce = 0;
+  List<String> lastExcludeContents = const [];
+
+  @override
+  Future<DailyPageFetchResult> fetchWithMeta({
+    required String deviceId,
+    ShelfBook? book,
+    String? wereadCookie,
+    int nonce = 0,
+    List<String> excludeContents = const [],
+  }) async {
+    lastNonce = nonce;
+    lastExcludeContents = excludeContents;
+    final content = excludeContents.isEmpty ? '第一页内容' : '第二页内容';
+    return DailyPageFetchResult(
+      reading: DailyPageReading(
+        bookTitle: '测试书',
+        author: '',
+        content: content,
+        sourceNote: '',
+        date: DateTime(2026, 6, 7),
+      ),
+    );
+  }
 }
 
 class _EchoBookClient extends DailyPageClient {
@@ -354,6 +395,7 @@ class _EchoBookClient extends DailyPageClient {
     ShelfBook? book,
     String? wereadCookie,
     int nonce = 0,
+    List<String> excludeContents = const [],
   }) async {
     return DailyPageFetchResult(
       reading: DailyPageReading(
@@ -379,6 +421,7 @@ class _CountingClient extends DailyPageClient {
     ShelfBook? book,
     String? wereadCookie,
     int nonce = 0,
+    List<String> excludeContents = const [],
   }) async {
     onFetch();
     return DailyPageFetchResult(
@@ -410,6 +453,7 @@ class _DelayedCountingClient extends DailyPageClient {
     ShelfBook? book,
     String? wereadCookie,
     int nonce = 0,
+    List<String> excludeContents = const [],
   }) async {
     onFetch();
     await Future<void>.delayed(delay);
@@ -442,6 +486,7 @@ class _CapturingClient extends DailyPageClient {
     ShelfBook? book,
     String? wereadCookie,
     int nonce = 0,
+    List<String> excludeContents = const [],
   }) async {
     onFetch?.call(book, wereadCookie);
     return result;
