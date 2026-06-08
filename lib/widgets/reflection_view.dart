@@ -5,7 +5,14 @@ import '../config/theme.dart';
 class ReflectionView extends StatelessWidget {
   final String reflection;
   final VoidCallback? onEdit;
-  const ReflectionView({super.key, required this.reflection, this.onEdit});
+  final void Function(BuildContext anchorContext)? onShare;
+
+  const ReflectionView({
+    super.key,
+    required this.reflection,
+    this.onEdit,
+    this.onShare,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,8 +22,7 @@ class ReflectionView extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.accentLight,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(
-            color: AppTheme.accent.withValues(alpha: 0.2)),
+        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,6 +38,21 @@ class ReflectionView extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: AppTheme.accent)),
               const Spacer(),
+              if (onShare != null)
+                Builder(
+                  builder: (btnContext) => IconButton(
+                    onPressed: () => onShare!(btnContext),
+                    tooltip: '分享',
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                    icon: const Icon(Icons.ios_share_rounded,
+                        size: 18, color: AppTheme.textMuted),
+                  ),
+                ),
               if (onEdit != null)
                 IconButton(
                   onPressed: onEdit,

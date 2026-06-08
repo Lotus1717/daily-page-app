@@ -9,6 +9,7 @@ import 'package:daily_page/services/daily_page_service.dart';
 import 'package:daily_page/services/page_entry_service.dart';
 import 'package:daily_page/services/reading_config_service.dart';
 import 'package:daily_page/services/reflection_prompt_service.dart';
+import 'package:daily_page/services/reminder_service.dart';
 
 void main() {
   setUpAll(() async {
@@ -24,8 +25,9 @@ void main() {
     final entrySvc = PageEntryService();
     final shelfSvc = BookshelfService(config: configSvc);
     final promptSvc = ReflectionPromptService();
+    final reminderSvc = ReminderService();
+    await reminderSvc.init();
     pageSvc.bindBookshelf(shelfSvc);
-    // 测试中不触发异步 refresh，避免 pump 挂起
 
     await tester.pumpWidget(
       DailyPageApp(
@@ -34,6 +36,7 @@ void main() {
         shelfSvc: shelfSvc,
         configSvc: configSvc,
         promptSvc: promptSvc,
+        reminderSvc: reminderSvc,
       ),
     );
     await tester.pump(const Duration(milliseconds: 600));

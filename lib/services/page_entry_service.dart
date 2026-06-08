@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/book_reflection_group.dart';
 import '../models/page_entry.dart';
+import '../utils/passage_key.dart';
 
 /// 感想持久化
 class PageEntryService extends ChangeNotifier {
@@ -11,9 +13,15 @@ class PageEntryService extends ChangeNotifier {
 
   Map<String, PageEntry> _entries = {};
 
-  /// Storage key: one entry per date + book title.
-  static String storageKey(String dateKey, {String? bookTitle}) {
+  static String storageKey(
+    String dateKey, {
+    String? bookTitle,
+    String? passageKey,
+  }) {
     if (bookTitle != null && bookTitle.isNotEmpty) {
+      if (passageKey != null && passageKey.isNotEmpty) {
+        return '$dateKey|$bookTitle|$passageKey';
+      }
       return '$dateKey|$bookTitle';
     }
     return dateKey;
@@ -22,15 +30,52 @@ class PageEntryService extends ChangeNotifier {
   bool hasWrittenToday(String dateKey) =>
       _entries.keys.any((k) => k == dateKey || k.startsWith('$dateKey|'));
 
-  bool hasWrittenFor(String dateKey, {String? bookTitle}) =>
-      entryFor(dateKey, bookTitle: bookTitle) != null;
+  bool hasWrittenFor(
+    String dateKey, {
+    String? bookTitle,
+    String? passageKey,
+  }) =>
+      entryFor(
+        dateKey,
+        bookTitle: bookTitle,
+        passageKey: passageKey,
+      ) !=
+      null;
 
-  PageEntry? entryFor(String dateKey, {String? bookTitle}) {
+  PageEntry? entryFor(
+    String dateKey, {
+    String? bookTitle,
+    String? passageKey,
+  }) {
     if (bookTitle != null && bookTitle.isNotEmpty) {
+      if (passageKey != null && passageKey.isNotEmpty) {
+        final exact = storageKey(
+          dateKey,
+          bookTitle: bookTitle,
+          passageKey: passageKey,
+        );
+        if (_entries.containsKey(exact)) return _entries[exact];
+
+        final composite = storageKey(dateKey, bookTitle: bookTitle);
+        if (_entries.containsKey(composite)) return _entries[composite];
+
+        return null;
+      }
+
       final composite = storageKey(dateKey, bookTitle: bookTitle);
       if (_entries.containsKey(composite)) return _entries[composite];
 
-      // Legacy: single entry stored under dateKey only.
+      final prefix = '$dateKey|$bookTitle|';
+      final passageMatches = _entries.entries
+          .where((e) => e.key.startsWith(prefix))
+          .map((e) => e.value)
+          .toList();
+      if (passageMatches.length == 1) return passageMatches.first;
+      if (passageMatches.length > 1) {
+        passageMatches.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return passageMatches.first;
+      }
+
       final legacy = _entries[dateKey];
       if (legacy != null &&
           (legacy.bookTitle == null ||
@@ -43,10 +88,44 @@ class PageEntryService extends ChangeNotifier {
     return _entries[dateKey];
   }
 
+  PageEntry? getById(String id) => _entries[id];
+
   List<PageEntry> get allSorted {
     final list = _entries.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return list;
+  }
+
+  List<PageEntry> entriesForBook(String groupKey) {
+    return allSorted
+        .where(
+          (e) =>
+              bookGroupKey(bookTitle: e.bookTitle, author: e.author) ==
+              groupKey,
+        )
+        .toList();
+  }
+
+  List<BookReflectionGroup> groupByBook() {
+    final map = <String, List<PageEntry>>{};
+    for (final entry in allSorted) {
+      final key = bookGroupKey(bookTitle: entry.bookTitle, author: entry.author);
+      map.putIfAbsent(key, () => []).add(entry);
+    }
+    return map.entries.map((e) {
+      final first = e.value.first;
+      final lastAt = e.value
+          .map((entry) => entry.createdAt)
+          .reduce((a, b) => a.isAfter(b) ? a : b);
+      return BookReflectionGroup(
+        groupKey: e.key,
+        bookTitle: first.bookTitle ?? '未知书名',
+        author: first.author ?? '',
+        entries: e.value,
+        lastWrittenAt: lastAt,
+      );
+    }).toList()
+      ..sort((a, b) => b.lastWrittenAt.compareTo(a.lastWrittenAt));
   }
 
   int get count => _entries.length;
@@ -67,15 +146,21 @@ class PageEntryService extends ChangeNotifier {
     }
   }
 
-  Future<void> save(
+  Future<PageEntry> save(
     String dateKey,
     String reflection, {
     String? bookTitle,
     String? author,
     String? sourceNote,
+    String? pageContent,
+    String? passageKey,
   }) async {
-    final id = storageKey(dateKey, bookTitle: bookTitle);
-    _entries[id] = PageEntry(
+    final id = storageKey(
+      dateKey,
+      bookTitle: bookTitle,
+      passageKey: passageKey,
+    );
+    final entry = PageEntry(
       id: id,
       dateKey: dateKey,
       reflection: reflection,
@@ -83,6 +168,28 @@ class PageEntryService extends ChangeNotifier {
       bookTitle: bookTitle,
       author: author,
       sourceNote: sourceNote,
+      pageContent: pageContent,
+      passageKey: passageKey,
+    );
+    _entries[id] = entry;
+    await _persist();
+    notifyListeners();
+    return entry;
+  }
+
+  Future<void> updateReflection(String id, String reflection) async {
+    final existing = _entries[id];
+    if (existing == null) return;
+    _entries[id] = PageEntry(
+      id: existing.id,
+      dateKey: existing.dateKey,
+      reflection: reflection,
+      createdAt: existing.createdAt,
+      bookTitle: existing.bookTitle,
+      author: existing.author,
+      sourceNote: existing.sourceNote,
+      pageContent: existing.pageContent,
+      passageKey: existing.passageKey,
     );
     await _persist();
     notifyListeners();

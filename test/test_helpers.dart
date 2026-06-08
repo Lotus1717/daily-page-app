@@ -13,6 +13,7 @@ import 'package:daily_page/services/daily_page_service.dart';
 import 'package:daily_page/services/page_entry_service.dart';
 import 'package:daily_page/services/reading_config_service.dart';
 import 'package:daily_page/services/reflection_prompt_service.dart';
+import 'package:daily_page/services/reminder_service.dart';
 
 /// 可控的 DailyPageClient，避免 widget 测试走真实网络
 class FakeDailyPageClient extends DailyPageClient {
@@ -60,6 +61,7 @@ class TestServices {
     required this.entrySvc,
     required this.shelfSvc,
     required this.promptSvc,
+    required this.reminderSvc,
     required this.pageClient,
   });
 
@@ -68,6 +70,7 @@ class TestServices {
   final PageEntryService entrySvc;
   final BookshelfService shelfSvc;
   final ReflectionPromptService promptSvc;
+  final ReminderService reminderSvc;
   final FakeDailyPageClient pageClient;
 
   Widget wrap(Widget child) {
@@ -78,6 +81,7 @@ class TestServices {
         ChangeNotifierProvider.value(value: shelfSvc),
         ChangeNotifierProvider.value(value: configSvc),
         ChangeNotifierProvider.value(value: promptSvc),
+        ChangeNotifierProvider.value(value: reminderSvc),
       ],
       child: MaterialApp(home: child),
     );
@@ -90,6 +94,7 @@ class TestServices {
       shelfSvc: shelfSvc,
       configSvc: configSvc,
       promptSvc: promptSvc,
+      reminderSvc: reminderSvc,
     );
   }
 }
@@ -136,6 +141,9 @@ Future<TestServices> createTestServices({
   final pageSvc = DailyPageService(client: client);
   pageSvc.bindBookshelf(shelfSvc);
 
+  final reminderSvc = ReminderService();
+  await reminderSvc.init();
+
   if (preloadPage) {
     await pageSvc.refresh();
   }
@@ -146,6 +154,7 @@ Future<TestServices> createTestServices({
     entrySvc: entrySvc,
     shelfSvc: shelfSvc,
     promptSvc: ReflectionPromptService(),
+    reminderSvc: reminderSvc,
     pageClient: client,
   );
 }

@@ -91,6 +91,47 @@ void main() {
       expect(service.hasWrittenToday('2026-06-07'), isTrue);
     });
 
+    test('same day same book different passages allow separate entries',
+        () async {
+      await service.save(
+        '2026-06-07',
+        '第一段感想',
+        bookTitle: '书A',
+        pageContent: '第一页内容',
+        passageKey: 'key1',
+      );
+      await service.save(
+        '2026-06-07',
+        '第二段感想',
+        bookTitle: '书A',
+        pageContent: '第二页内容',
+        passageKey: 'key2',
+      );
+
+      expect(service.count, 2);
+      expect(
+        service.entryFor('2026-06-07', bookTitle: '书A', passageKey: 'key1')
+            ?.reflection,
+        '第一段感想',
+      );
+      expect(
+        service.entryFor('2026-06-07', bookTitle: '书A', passageKey: 'key2')
+            ?.reflection,
+        '第二段感想',
+      );
+    });
+
+    test('groupByBook aggregates entries', () async {
+      await service.save('2026-06-07', 'A1', bookTitle: '书A', author: '作者A');
+      await service.save('2026-06-06', 'A2', bookTitle: '书A', author: '作者A');
+      await service.save('2026-06-05', 'B1', bookTitle: '书B');
+
+      final groups = service.groupByBook();
+      expect(groups.length, 2);
+      final bookA = groups.firstWhere((g) => g.bookTitle == '书A');
+      expect(bookA.count, 2);
+    });
+
     test('allSorted returns newest first', () async {
       await service.save('2026-06-05', '旧');
       await service.save('2026-06-07', '新');

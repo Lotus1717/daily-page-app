@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:daily_page/models/daily_page_reading.dart';
 import 'package:daily_page/screens/home_page.dart';
 import 'package:daily_page/services/daily_page_client.dart';
+import 'package:daily_page/utils/passage_key.dart';
 
 import 'test_helpers.dart';
 
@@ -59,6 +60,63 @@ void main() {
       expect(find.text('第二段'), findsOneWidget);
     });
 
+    testWidgets('换一页 after reflection shows new input for same book',
+        (tester) async {
+      final client = FakeDailyPageClient(
+        results: [
+          DailyPageFetchResult(
+            reading: DailyPageReading(
+              bookTitle: '在读书目',
+              author: '作者',
+              content: '第一页',
+              sourceNote: '第一章',
+              date: DateTime.now(),
+            ),
+          ),
+          DailyPageFetchResult(
+            reading: DailyPageReading(
+              bookTitle: '在读书目',
+              author: '作者',
+              content: '第二页内容',
+              sourceNote: '第二章',
+              date: DateTime.now(),
+            ),
+          ),
+        ],
+      );
+      final services = await createTestServices(
+        pageClient: client,
+        withReadingBook: true,
+        preloadPage: true,
+      );
+
+      await tester.pumpWidget(services.wrap(const HomePage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '第一段感想');
+      await tester.tap(find.widgetWithText(FilledButton, '记下来'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('已记录'), findsOneWidget);
+
+      await tester.tap(find.text('换一页'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('第二页内容'), findsOneWidget);
+      expect(find.text('写一句感想'), findsOneWidget);
+      expect(find.text('已记录'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), '第二段感想');
+      await tester.tap(find.widgetWithText(FilledButton, '记下来'));
+      await tester.pumpAndSettle();
+
+      final dateKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      expect(services.entrySvc.count, 2);
+      final groups = services.entrySvc.groupByBook();
+      expect(groups.length, 1);
+      expect(groups.first.count, 2);
+    });
+
     testWidgets('换一本 triggers discovery switch', (tester) async {
       final client = FakeDailyPageClient();
       final services = await createTestServices(
@@ -110,12 +168,26 @@ void main() {
         services.entrySvc.entryFor(dateKey, bookTitle: '测试书')?.sourceNote,
         '节选',
       );
+      expect(
+        services.entrySvc.entryFor(dateKey, bookTitle: '测试书')?.pageContent,
+        '今日这一页的内容。',
+      );
     });
 
     testWidgets('edit icon opens sheet and updates reflection', (tester) async {
       final services = await createTestServices(preloadPage: true);
       final dateKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      await services.entrySvc.save(dateKey, '原始感想');
+      await services.entrySvc.save(
+        dateKey,
+        '原始感想',
+        bookTitle: '测试书',
+        pageContent: '今日这一页的内容。',
+        passageKey: passageKeyFor(
+          bookTitle: '测试书',
+          content: '今日这一页的内容。',
+          sourceNote: '节选',
+        ),
+      );
 
       await tester.pumpWidget(services.wrap(const HomePage()));
       await tester.pumpAndSettle();

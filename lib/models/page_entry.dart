@@ -7,6 +7,10 @@ class PageEntry {
   final String? bookTitle;
   final String? author;
   final String? sourceNote;
+  /// 当时读的书摘正文
+  final String? pageContent;
+  /// 段落指纹，同书换页时区分不同摘录
+  final String? passageKey;
 
   const PageEntry({
     required this.id,
@@ -16,6 +20,8 @@ class PageEntry {
     this.bookTitle,
     this.author,
     this.sourceNote,
+    this.pageContent,
+    this.passageKey,
   });
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +33,10 @@ class PageEntry {
         if (author != null) 'author': author,
         if (sourceNote != null && sourceNote!.isNotEmpty)
           'sourceNote': sourceNote,
+        if (pageContent != null && pageContent!.isNotEmpty)
+          'pageContent': pageContent,
+        if (passageKey != null && passageKey!.isNotEmpty)
+          'passageKey': passageKey,
       };
 
   factory PageEntry.fromJson(Map<String, dynamic> json, {String? storageKey}) =>
@@ -38,5 +48,7 @@ class PageEntry {
         bookTitle: json['bookTitle'] as String?,
         author: json['author'] as String?,
         sourceNote: json['sourceNote'] as String?,
+        pageContent: json['pageContent'] as String?,
+        passageKey: json['passageKey'] as String?,
       );
 }

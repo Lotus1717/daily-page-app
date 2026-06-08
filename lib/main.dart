@@ -11,6 +11,7 @@ import 'services/device_id_store.dart';
 import 'services/page_entry_service.dart';
 import 'services/reading_config_service.dart';
 import 'services/reflection_prompt_service.dart';
+import 'services/reminder_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,10 +24,13 @@ Future<void> main() async {
   final entrySvc = PageEntryService();
   final shelfSvc = BookshelfService(config: configSvc);
   final promptSvc = ReflectionPromptService();
+  final reminderSvc = ReminderService();
   final deviceId = await DeviceIdStore.getOrCreate();
 
   await entrySvc.load();
   await shelfSvc.load();
+  await reminderSvc.init();
+  await reminderSvc.syncSchedule(entrySvc);
   pageSvc.bindBookshelf(shelfSvc);
   pageSvc.init(deviceId);
 
@@ -36,6 +40,7 @@ Future<void> main() async {
     shelfSvc: shelfSvc,
     configSvc: configSvc,
     promptSvc: promptSvc,
+    reminderSvc: reminderSvc,
   ));
 }
 
@@ -47,6 +52,7 @@ class DailyPageApp extends StatelessWidget {
     required this.shelfSvc,
     required this.configSvc,
     required this.promptSvc,
+    required this.reminderSvc,
   });
 
   final DailyPageService pageSvc;
@@ -54,6 +60,7 @@ class DailyPageApp extends StatelessWidget {
   final BookshelfService shelfSvc;
   final ReadingConfigService configSvc;
   final ReflectionPromptService promptSvc;
+  final ReminderService reminderSvc;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +71,7 @@ class DailyPageApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: shelfSvc),
         ChangeNotifierProvider.value(value: configSvc),
         ChangeNotifierProvider.value(value: promptSvc),
+        ChangeNotifierProvider.value(value: reminderSvc),
       ],
       child: MaterialApp(
         title: AppBranding.name,

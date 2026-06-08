@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/reading_stats.dart';
 import '../services/page_entry_service.dart';
+import '../services/reminder_service.dart';
 import '../services/weread_config_store.dart';
 import 'history_page.dart';
 
@@ -89,6 +90,8 @@ class _ProfilePageState extends State<ProfilePage> {
             count: entries.length,
             onTap: openReflectionHistory,
           ),
+          const SizedBox(height: 20),
+          _ReminderSection(),
           const SizedBox(height: 20),
           _SectionTitle(title: '阅读数据', icon: Icons.insights_outlined),
           const SizedBox(height: 8),
@@ -340,6 +343,92 @@ class _MiniStat extends StatelessWidget {
               style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
         ],
       ),
+    );
+  }
+}
+
+class _ReminderSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final reminder = context.watch<ReminderService>();
+    final entries = context.read<PageEntryService>();
+
+    Future<void> pickTime() async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay(hour: reminder.hour, minute: reminder.minute),
+        helpText: '选择每日提醒时间',
+      );
+      if (picked != null && context.mounted) {
+        await reminder.setTime(picked.hour, picked.minute, entries);
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(title: '每日提醒', icon: Icons.notifications_outlined),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            boxShadow: AppTheme.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '提醒读一页',
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  Switch(
+                    value: reminder.enabled,
+                    onChanged: (on) async {
+                      final ok = await reminder.setEnabled(on, entries);
+                      if (!on || ok || !context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('请在系统设置中允许通知权限'),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                reminder.enabled
+                    ? '每天 ${reminder.timeLabel} 提醒（当天已写感想则跳过）'
+                    : '开启后，在固定时间提醒你读一页、写一句',
+                style: const TextStyle(
+                    fontSize: 11, color: AppTheme.textMuted, height: 1.4),
+              ),
+              if (reminder.enabled) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: pickTime,
+                  icon: const Icon(Icons.schedule_rounded, size: 18),
+                  label: Text('提醒时间：${reminder.timeLabel}'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.highlight,
+                    side: BorderSide(
+                        color: AppTheme.highlight.withValues(alpha: 0.35)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

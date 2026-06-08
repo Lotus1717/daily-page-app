@@ -6,10 +6,14 @@ import 'package:provider/provider.dart';
 
 import '../config/app_branding.dart';
 import '../config/theme.dart';
+import '../models/page_entry.dart';
 import '../services/bookshelf_service.dart';
 import '../services/daily_page_service.dart';
 import '../services/page_entry_service.dart';
 import '../services/reflection_prompt_service.dart';
+import '../services/reminder_service.dart';
+import '../services/share_service.dart';
+import '../utils/passage_key.dart';
 import '../widgets/page_content_card.dart';
 import '../widgets/reflection_input.dart';
 import '../widgets/reflection_view.dart';
@@ -87,10 +91,20 @@ class _HomePageState extends State<HomePage> {
     final pageSvc = context.watch<DailyPageService>();
     final shelfSvc = context.watch<BookshelfService>();
     final promptSvc = context.watch<ReflectionPromptService>();
-    final bookTitle = pageSvc.page?.bookTitle;
-    final hasWritten =
-        entrySvc.hasWrittenFor(_dateKey, bookTitle: bookTitle);
-    final entry = entrySvc.entryFor(_dateKey, bookTitle: bookTitle);
+    final page = pageSvc.page;
+    final bookTitle = page?.bookTitle;
+    final passageKey =
+        page != null ? passageKeyForPage(page) : null;
+    final hasWritten = entrySvc.hasWrittenFor(
+      _dateKey,
+      bookTitle: bookTitle,
+      passageKey: passageKey,
+    );
+    final entry = entrySvc.entryFor(
+      _dateKey,
+      bookTitle: bookTitle,
+      passageKey: passageKey,
+    );
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final showReflectionSaveBar = !hasWritten &&
         pageSvc.page != null &&
@@ -179,7 +193,9 @@ class _HomePageState extends State<HomePage> {
                     if (hasWritten && entry != null)
                       ReflectionView(
                         reflection: entry.reflection,
-                        onEdit: () => _editReflection(context),
+                        onEdit: () => _editReflection(context, entry),
+                        onShare: (anchor) =>
+                            ShareService.shareEntry(entry, anchorContext: anchor),
                       )
                     else if (pageSvc.page != null) ...[
                       if (promptSvc.loading)
@@ -234,27 +250,39 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _saveReflection(BuildContext context, String text) {
+  Future<void> _saveReflection(BuildContext context, String text) async {
     final page = context.read<DailyPageService>().page;
-    context.read<PageEntryService>().save(
-          _dateKey,
-          text,
-          bookTitle: page?.bookTitle,
-          author: page?.author,
-          sourceNote: page?.sourceNote,
-        );
+    final entrySvc = context.read<PageEntryService>();
+    final reminderSvc = context.read<ReminderService>();
+    final passageKey =
+        page != null ? passageKeyForPage(page) : null;
+    final entry = await entrySvc.save(
+      _dateKey,
+      text,
+      bookTitle: page?.bookTitle,
+      author: page?.author,
+      sourceNote: page?.sourceNote,
+      pageContent: page?.content,
+      passageKey: passageKey,
+    );
+    await reminderSvc.syncSchedule(entrySvc);
     _controller.clear();
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已记下今天的感想')),
+      SnackBar(
+        content: const Text('已记下今天的感想'),
+        action: SnackBarAction(
+          label: '分享',
+          onPressed: () => ShareService.shareEntryAfterFrame(
+            entry,
+            anchorContext: context,
+          ),
+        ),
+      ),
     );
   }
 
-  void _editReflection(BuildContext context) {
-    final page = context.read<DailyPageService>().page;
-    final entry = context.read<PageEntryService>().entryFor(
-          _dateKey,
-          bookTitle: page?.bookTitle,
-        );
+  void _editReflection(BuildContext context, PageEntry entry) {
     final ctrl = TextEditingController(text: entry?.reflection ?? '');
     showModalBottomSheet(
       context: context,
@@ -294,21 +322,18 @@ class _HomePageState extends State<HomePage> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: () {
+                onPressed: () async {
                   final t = ctrl.text.trim();
                   if (t.isEmpty) return;
-                  final page = context.read<DailyPageService>().page;
-                  context.read<PageEntryService>().save(
-                        _dateKey,
-                        t,
-                        bookTitle: entry?.bookTitle ?? page?.bookTitle,
-                        author: entry?.author ?? page?.author,
-                        sourceNote: entry?.sourceNote ?? page?.sourceNote,
-                      );
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('已更新感想')),
-                  );
+                  await context
+                      .read<PageEntryService>()
+                      .updateReflection(entry.id, t);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('已更新感想')),
+                    );
+                  }
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.accent,
