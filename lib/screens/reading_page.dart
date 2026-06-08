@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/shelf_book.dart';
 import '../services/bookshelf_service.dart';
+import '../services/daily_page_service.dart';
 import '../services/reading_config_service.dart';
 import '../services/weread_config_store.dart';
 import '../services/weread_service.dart';
@@ -70,8 +71,10 @@ class _ReadingPageState extends State<ReadingPage> {
   @override
   Widget build(BuildContext context) {
     final shelf = context.watch<BookshelfService>();
+    final pageSvc = context.watch<DailyPageService>();
     final reading = shelf.readingBooks;
     final max = ReadingConfigService.maxReadingBooks;
+    final todayId = shelf.config.todayBookId ?? pageSvc.pickedBook?.id;
 
     return Scaffold(
       appBar: AppBar(
@@ -110,6 +113,10 @@ class _ReadingPageState extends State<ReadingPage> {
                 child: _ReadingBookCard(
                   book: b,
                   isQueue: true,
+                  isToday: b.id == todayId,
+                  onSetToday: b.id == todayId
+                      ? null
+                      : () => pageSvc.readBookToday(b),
                   onRemove: () => shelf.removeFromReading(b.id),
                 ),
               ),
@@ -223,13 +230,17 @@ class _EmptyReadingHint extends StatelessWidget {
 class _ReadingBookCard extends StatelessWidget {
   final ShelfBook book;
   final bool isQueue;
+  final bool isToday;
   final VoidCallback? onAdd;
+  final VoidCallback? onSetToday;
   final VoidCallback? onRemove;
 
   const _ReadingBookCard({
     required this.book,
     required this.isQueue,
+    this.isToday = false,
     this.onAdd,
+    this.onSetToday,
     this.onRemove,
   });
 
@@ -275,6 +286,31 @@ class _ReadingBookCard extends StatelessWidget {
               ),
               child: const Text('微信',
                   style: TextStyle(fontSize: 10, color: AppTheme.highlight)),
+            ),
+          if (isToday)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.accentLight,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text('在读中',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.accent)),
+            )
+          else if (onSetToday != null)
+            TextButton(
+              onPressed: onSetToday,
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.highlight,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('今日读这本', style: TextStyle(fontSize: 11)),
             ),
           if (onAdd != null)
             IconButton(

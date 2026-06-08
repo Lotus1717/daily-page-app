@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:daily_page/models/book_pick_strategy.dart';
 import 'package:daily_page/models/daily_page_reading.dart';
 import 'package:daily_page/models/shelf_book.dart';
 import 'package:daily_page/services/bookshelf_service.dart';
@@ -200,9 +199,8 @@ void main() {
       expect(service.discoveryMode, isFalse);
     });
 
-    test('refresh reuses today pick without advancing roundRobin', () async {
+    test('refresh reuses today pick on same day', () async {
       final config = ReadingConfigService();
-      await config.setStrategy(BookPickStrategy.roundRobin);
       final shelf = BookshelfService(config: config);
       await shelf.load();
       await shelf.addManual('第一本', '');
@@ -215,27 +213,28 @@ void main() {
         sourceNote: '',
         date: DateTime(2026, 6, 7),
       );
-      final client = _FakeDailyPageClient(
+      var fetchCount = 0;
+      final client = _CapturingClient(
         result: DailyPageFetchResult(
           reading: reading,
           pickedBook: shelf.readingBooks.first,
         ),
+        onFetch: (_, __) => fetchCount++,
       );
       final service = DailyPageService(client: client);
       service.bindBookshelf(shelf);
 
       await service.refresh();
-      expect(config.roundRobinIndex, 1);
       expect(service.pickedBook?.title, '第一本');
+      expect(fetchCount, 1);
 
       await service.refresh();
-      expect(config.roundRobinIndex, 1);
       expect(service.pickedBook?.title, '第一本');
+      expect(fetchCount, 2);
     });
 
     test('nextReadingBook picks from queue with book title', () async {
       final config = ReadingConfigService();
-      await config.setStrategy(BookPickStrategy.roundRobin);
       final shelf = BookshelfService(config: config);
       await shelf.load();
       await shelf.addManual('第一本', '');
@@ -264,6 +263,38 @@ void main() {
       await service.nextReadingBook();
       expect(capturedBook?.title, '第二本');
       expect(service.discoveryMode, isFalse);
+    });
+
+    test('readBookToday sets override and refreshes', () async {
+      final config = ReadingConfigService();
+      final shelf = BookshelfService(config: config);
+      await shelf.load();
+      await shelf.addManual('第一本', '');
+      await shelf.addManual('第二本', '');
+      final second = shelf.readingBooks.last;
+
+      ShelfBook? capturedBook;
+      final client = _CapturingClient(
+        result: DailyPageFetchResult(
+          reading: DailyPageReading(
+            bookTitle: second.title,
+            author: '',
+            content: '摘录',
+            sourceNote: '',
+            date: DateTime(2026, 6, 7),
+          ),
+          pickedBook: second,
+        ),
+        onFetch: (book, _) => capturedBook = book,
+      );
+
+      final service = DailyPageService(client: client);
+      service.bindBookshelf(shelf);
+
+      await service.readBookToday(second);
+
+      expect(capturedBook?.title, '第二本');
+      expect(config.todayBookId, second.id);
     });
 
     test('pending refresh runs after in-flight discovery load when book added',
@@ -296,7 +327,6 @@ void main() {
 
     test('repicks when today book removed from reading queue', () async {
       final config = ReadingConfigService();
-      await config.setStrategy(BookPickStrategy.roundRobin);
       final shelf = BookshelfService(config: config);
       await shelf.load();
       await shelf.addManual('第一本', '');
@@ -313,7 +343,6 @@ void main() {
       }
 
       expect(service.pickedBook?.title, '第二本');
-      expect(config.roundRobinIndex, 0);
     });
   });
 }

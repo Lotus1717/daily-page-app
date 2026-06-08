@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../config/theme.dart';
-import '../models/book_pick_strategy.dart';
 import '../models/reading_stats.dart';
-import '../services/bookshelf_service.dart';
 import '../services/page_entry_service.dart';
-import '../services/reading_config_service.dart';
 import '../services/weread_config_store.dart';
 import 'history_page.dart';
 
-/// 「我」— 选书策略、微信读书、阅读统计
+/// 「我」— 阅读统计、微信读书
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -74,8 +71,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final entries = context.watch<PageEntryService>().allSorted;
     final stats = ReadingStats.fromEntries(entries);
-    final shelf = context.watch<BookshelfService>();
-    final config = context.watch<ReadingConfigService>();
 
     void openReflectionHistory() {
       Navigator.of(context, rootNavigator: true).push(
@@ -94,18 +89,6 @@ class _ProfilePageState extends State<ProfilePage> {
             count: entries.length,
             onTap: openReflectionHistory,
           ),
-          const SizedBox(height: 20),
-          _SectionTitle(title: '选书策略', icon: Icons.shuffle_rounded),
-          const SizedBox(height: 8),
-          _StrategyPicker(
-            selected: config.strategy,
-            onSelect: config.setStrategy,
-            hintFor: _strategyHint,
-          ),
-          if (config.strategy == BookPickStrategy.manual) ...[
-            const SizedBox(height: 8),
-            _ManualBookPicker(shelf: shelf, config: config),
-          ],
           const SizedBox(height: 20),
           _SectionTitle(title: '阅读数据', icon: Icons.insights_outlined),
           const SizedBox(height: 8),
@@ -198,116 +181,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-    );
-  }
-
-  String _strategyHint(BookPickStrategy s) {
-    return switch (s) {
-      BookPickStrategy.roundRobin => '按顺序每天换一本在读书',
-      BookPickStrategy.longestUnread => '优先选最久没读的那本',
-      BookPickStrategy.random => '每天在读书中随机一本',
-      BookPickStrategy.manual => '在下方指定今日要读的书',
-    };
-  }
-}
-
-class _ManualBookPicker extends StatelessWidget {
-  final BookshelfService shelf;
-  final ReadingConfigService config;
-
-  const _ManualBookPicker({required this.shelf, required this.config});
-
-  @override
-  Widget build(BuildContext context) {
-    final reading = shelf.readingBooks;
-    if (reading.isEmpty) {
-      return const Text('请先在「在读」中加入书籍',
-          style: TextStyle(fontSize: 12, color: AppTheme.textMuted));
-    }
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: reading.map((b) {
-        final selected = config.manualBookId == b.id;
-        return FilterChip(
-          label: Text(b.title, style: const TextStyle(fontSize: 12)),
-          selected: selected,
-          onSelected: (_) => config.setManualBookId(b.id),
-          selectedColor: AppTheme.highlightLight,
-          checkmarkColor: AppTheme.highlight,
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _StrategyPicker extends StatelessWidget {
-  final BookPickStrategy selected;
-  final ValueChanged<BookPickStrategy> onSelect;
-  final String Function(BookPickStrategy) hintFor;
-
-  const _StrategyPicker({
-    required this.selected,
-    required this.onSelect,
-    required this.hintFor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: BookPickStrategy.values.map((strategy) {
-        final isSelected = strategy == selected;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Material(
-            color: isSelected ? AppTheme.highlightLight : AppTheme.card,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: () => onSelect(strategy),
-              borderRadius: BorderRadius.circular(12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppTheme.highlight
-                        : AppTheme.textLight.withValues(alpha: 0.35),
-                    width: isSelected ? 1.5 : 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(strategy.label,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                              )),
-                          const SizedBox(height: 2),
-                          Text(hintFor(strategy),
-                              style: const TextStyle(
-                                  fontSize: 11, color: AppTheme.textMuted)),
-                        ],
-                      ),
-                    ),
-                    if (isSelected)
-                      const Icon(Icons.check_circle_rounded,
-                          size: 20, color: AppTheme.highlight),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }

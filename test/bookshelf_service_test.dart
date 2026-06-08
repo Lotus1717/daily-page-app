@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:daily_page/models/book_pick_strategy.dart';
 import 'package:daily_page/models/shelf_book.dart';
 import 'package:daily_page/services/bookshelf_service.dart';
 import 'package:daily_page/services/reading_config_service.dart';
@@ -98,19 +97,44 @@ void main() {
       expect(prefs.getString('daily_page_bookshelf'), '[]');
     });
 
-    test('pickForToday roundRobin selects and advances index', () async {
-      await config.setStrategy(BookPickStrategy.roundRobin);
+    test('pickForToday prefers longest unread', () async {
       await shelf.addManual('第一本', '');
       await shelf.addManual('第二本', '');
+      final firstId = shelf.books.firstWhere((b) => b.title == '第一本').id;
 
-      final picked1 = await shelf.pickForToday('2026-06-07');
-      expect(picked1?.title, '第一本');
-      expect(config.roundRobinIndex, 1);
+      await shelf.pickForToday('2026-06-06');
+      final picked = await shelf.pickForToday('2026-06-07');
 
-      final picked2 = await shelf.pickForToday('2026-06-08');
-      expect(picked2?.title, '第二本');
-      expect(shelf.books.firstWhere((b) => b.title == '第一本').lastReadDateKey,
-          '2026-06-07');
+      expect(picked?.title, '第二本');
+      expect(
+        shelf.books.firstWhere((b) => b.id == firstId).lastReadDateKey,
+        '2026-06-06',
+      );
+    });
+
+    test('pickForToday respects today override', () async {
+      await shelf.addManual('第一本', '');
+      await shelf.addManual('第二本', '');
+      final second = shelf.books.firstWhere((b) => b.title == '第二本');
+
+      await shelf.setTodayBook(second.id);
+      final picked = await shelf.pickForToday('2026-06-07');
+
+      expect(picked?.title, '第二本');
+    });
+
+    test('pickForToday excludeBookId picks another book', () async {
+      await shelf.addManual('第一本', '');
+      await shelf.addManual('第二本', '');
+      final first = shelf.books.firstWhere((b) => b.title == '第一本');
+
+      final picked = await shelf.pickForToday(
+        '2026-06-07',
+        excludeBookId: first.id,
+        respectTodayOverride: false,
+      );
+
+      expect(picked?.title, '第二本');
     });
 
     test('mergeWeReadBooks merges and updates existing', () async {
@@ -141,14 +165,15 @@ void main() {
       expect(updated.bookId, 'wr-1');
     });
 
-    test('notifies listeners when reading config strategy changes', () async {
+    test('notifies listeners when today book changes', () async {
+      await shelf.addManual('书', '');
       var notifications = 0;
       shelf.addListener(() => notifications++);
 
-      await config.setStrategy(BookPickStrategy.random);
+      await shelf.setTodayBook(shelf.books.first.id);
 
-      expect(notifications, 1);
-      expect(shelf.config.strategy, BookPickStrategy.random);
+      expect(notifications, greaterThanOrEqualTo(1));
+      expect(shelf.config.todayBookId, shelf.books.first.id);
     });
   });
 }

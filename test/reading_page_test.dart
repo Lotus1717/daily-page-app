@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:daily_page/screens/reading_page.dart';
 import 'package:daily_page/services/bookshelf_service.dart';
+import 'package:daily_page/services/daily_page_service.dart';
 import 'package:daily_page/services/reading_config_service.dart';
 
 import 'test_helpers.dart';
@@ -11,6 +12,7 @@ import 'test_helpers.dart';
 void main() {
   late ReadingConfigService config;
   late BookshelfService shelf;
+  late DailyPageService pageSvc;
 
   setUp(() async {
     await initTestEnvironment();
@@ -18,12 +20,17 @@ void main() {
     await config.load();
     shelf = BookshelfService(config: config);
     await shelf.load();
+    pageSvc = DailyPageService(client: FakeDailyPageClient());
+    pageSvc.bindBookshelf(shelf);
   });
 
   Widget buildTestApp() {
     return MaterialApp(
-      home: ChangeNotifierProvider.value(
-        value: shelf,
+      home: MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: shelf),
+          ChangeNotifierProvider.value(value: pageSvc),
+        ],
         child: const ReadingPage(),
       ),
     );

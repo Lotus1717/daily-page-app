@@ -1,55 +1,31 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/book_pick_strategy.dart';
-
-/// 阅读偏好：选书策略、手动指定今日书目
+/// 阅读偏好：今日指定书目（可选）
 class ReadingConfigService extends ChangeNotifier {
-  static const _strategyKey = 'book_pick_strategy';
-  static const _manualBookIdKey = 'manual_today_book_id';
-  static const _roundRobinIndexKey = 'round_robin_index';
+  static const _todayBookIdKey = 'manual_today_book_id';
 
-  BookPickStrategy _strategy = BookPickStrategy.roundRobin;
-  String? _manualBookId;
-  int _roundRobinIndex = 0;
+  String? _todayBookId;
 
-  BookPickStrategy get strategy => _strategy;
-  String? get manualBookId => _manualBookId;
-  int get roundRobinIndex => _roundRobinIndex;
+  String? get todayBookId => _todayBookId;
 
   static const maxReadingBooks = 3;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _strategy = BookPickStrategy.fromName(prefs.getString(_strategyKey));
-    _manualBookId = prefs.getString(_manualBookIdKey);
-    _roundRobinIndex = prefs.getInt(_roundRobinIndexKey) ?? 0;
+    _todayBookId = prefs.getString(_todayBookIdKey);
     notifyListeners();
   }
 
-  Future<void> setStrategy(BookPickStrategy strategy) async {
-    if (_strategy == strategy) return;
-    _strategy = strategy;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_strategyKey, strategy.name);
-  }
-
-  Future<void> setManualBookId(String? bookId) async {
-    if (_manualBookId == bookId) return;
-    _manualBookId = bookId;
+  Future<void> setTodayBookId(String? bookId) async {
+    if (_todayBookId == bookId) return;
+    _todayBookId = bookId;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     if (bookId == null) {
-      await prefs.remove(_manualBookIdKey);
+      await prefs.remove(_todayBookIdKey);
     } else {
-      await prefs.setString(_manualBookIdKey, bookId);
+      await prefs.setString(_todayBookIdKey, bookId);
     }
-  }
-
-  Future<void> saveRoundRobinIndex(int index) async {
-    _roundRobinIndex = index;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_roundRobinIndexKey, index);
   }
 }

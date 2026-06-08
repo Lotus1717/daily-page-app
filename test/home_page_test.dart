@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
-import 'package:daily_page/config/theme.dart';
-import 'package:daily_page/models/book_pick_strategy.dart';
 import 'package:daily_page/models/daily_page_reading.dart';
 import 'package:daily_page/screens/home_page.dart';
 import 'package:daily_page/services/daily_page_client.dart';
@@ -16,12 +14,12 @@ void main() {
   });
 
   group('HomePage interactions', () {
-    testWidgets('再读一页 triggers page reload', (tester) async {
+    testWidgets('换一页 reloads excerpt with nonce', (tester) async {
       final client = FakeDailyPageClient(
         results: [
           DailyPageFetchResult(
             reading: DailyPageReading(
-              bookTitle: '第一本书',
+              bookTitle: '在读书目',
               author: '作者',
               content: '第一页',
               sourceNote: '',
@@ -30,9 +28,9 @@ void main() {
           ),
           DailyPageFetchResult(
             reading: DailyPageReading(
-              bookTitle: '第二本书',
+              bookTitle: '在读书目',
               author: '作者',
-              content: '第二页',
+              content: '第二段',
               sourceNote: '',
               date: DateTime.now(),
             ),
@@ -49,14 +47,16 @@ void main() {
       await tester.pumpWidget(services.wrap(const HomePage()));
       await tester.pumpAndSettle();
 
-      expect(find.text('第一本书'), findsOneWidget);
+      expect(find.text('第一页'), findsOneWidget);
       expect(client.fetchCount, 1);
 
-      await tester.tap(find.text('再读一页'));
+      await tester.tap(find.text('换一页'));
       await tester.pumpAndSettle();
 
       expect(client.fetchCount, 2);
-      expect(find.text('第二本书'), findsOneWidget);
+      expect(client.lastNonce, greaterThan(0));
+      expect(client.lastBook?.title, '在读书目');
+      expect(find.text('第二段'), findsOneWidget);
     });
 
     testWidgets('换一本 triggers discovery switch', (tester) async {
@@ -219,10 +219,10 @@ void main() {
       expect(services.pageSvc.discoveryMode, isTrue);
       expect(find.text('随机探索'), findsOneWidget);
       expect(find.text('换一本'), findsOneWidget);
-      expect(find.text('再读一页'), findsNothing);
+      expect(find.text('换一页'), findsOneWidget);
     });
 
-    testWidgets('normal mode shows strategy label and 再读一页 button',
+    testWidgets('normal mode shows 在读书 label and 换一页 link',
         (tester) async {
       final services = await createTestServices(
         withReadingBook: true,
@@ -235,13 +235,12 @@ void main() {
 
       expect(services.pageSvc.discoveryMode, isFalse);
       expect(services.shelfSvc.readingBooks.length, 1);
-      expect(find.text('轮询在读书'), findsOneWidget);
-      expect(find.text('再读一页'), findsOneWidget);
+      expect(find.text('在读书'), findsOneWidget);
+      expect(find.text('换一页'), findsOneWidget);
       expect(find.text('换一本'), findsNothing);
-      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
     });
 
-    testWidgets('single reading book uses highlight app bar action style',
+    testWidgets('single reading book has no AppBar switch action',
         (tester) async {
       final services = await createTestServices(
         withReadingBook: true,
@@ -252,14 +251,8 @@ void main() {
       await tester.pumpWidget(services.wrap(const HomePage()));
       await tester.pumpAndSettle();
 
-      final button = tester.widget<TextButton>(
-        find.widgetWithText(TextButton, '再读一页'),
-      );
-      final style = button.style ?? AppTheme.appBarActionStyle;
-      expect(
-        style.foregroundColor?.resolve({}),
-        AppTheme.highlight,
-      );
+      expect(find.text('换一本'), findsNothing);
+      expect(find.text('换一页'), findsOneWidget);
     });
 
     testWidgets('manual reading book loads excerpt from that book',
@@ -292,7 +285,7 @@ void main() {
       expect(services.pageSvc.discoveryMode, isFalse);
     });
 
-    testWidgets('adding reading book shows 再读一页 and loads that book',
+    testWidgets('adding reading book shows 换一页 and loads that book',
         (tester) async {
       final client = FakeDailyPageClient(
         results: [
@@ -326,13 +319,13 @@ void main() {
 
       expect(services.pageSvc.discoveryMode, isTrue);
       expect(find.text('换一本'), findsOneWidget);
-      expect(find.text('再读一页'), findsNothing);
+      expect(find.text('换一页'), findsOneWidget);
 
       await services.shelfSvc.addManual('在读书目', '作者');
       await tester.pumpAndSettle();
 
       expect(services.pageSvc.discoveryMode, isFalse);
-      expect(find.text('再读一页'), findsOneWidget);
+      expect(find.text('换一页'), findsOneWidget);
       expect(find.text('换一本'), findsNothing);
 
       expect(client.fetchCount, 2);
@@ -341,7 +334,7 @@ void main() {
       expect(find.text('手动书的摘录'), findsOneWidget);
     });
 
-    testWidgets('multi-book in-reading shows 换一本 and 再读一页',
+    testWidgets('multi-book in-reading shows 换一本 only in AppBar',
         (tester) async {
       final services = await createTestServices(
         withCookie: true,
@@ -355,28 +348,7 @@ void main() {
 
       expect(services.shelfSvc.readingBooks.length, 2);
       expect(find.text('换一本'), findsOneWidget);
-      expect(find.text('再读一页'), findsOneWidget);
-    });
-
-    testWidgets('manual strategy hides 换一本 when 2+ reading books',
-        (tester) async {
-      final services = await createTestServices(
-        withCookie: true,
-        withReadingBook: true,
-        preloadPage: true,
-      );
-      await services.shelfSvc.addManual('第二本书', '作者');
-      await services.configSvc.setStrategy(BookPickStrategy.manual);
-      await services.configSvc.setManualBookId(
-        services.shelfSvc.readingBooks.first.id,
-      );
-
-      await tester.pumpWidget(services.wrap(const HomePage()));
-      await tester.pumpAndSettle();
-
-      expect(services.shelfSvc.readingBooks.length, 2);
-      expect(find.text('换一本'), findsNothing);
-      expect(find.text('再读一页'), findsOneWidget);
+      expect(find.text('换一页'), findsOneWidget);
     });
 
     testWidgets('switch book and save both reflections keeps two entries',

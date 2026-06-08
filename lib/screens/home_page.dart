@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../config/app_branding.dart';
 import '../config/theme.dart';
-import '../models/book_pick_strategy.dart';
 import '../services/bookshelf_service.dart';
 import '../services/daily_page_service.dart';
 import '../services/page_entry_service.dart';
@@ -65,6 +64,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _reloadPage({bool switchBook = false, bool anotherPassage = false}) {
+    _lastPromptKey = null;
+    context.read<ReflectionPromptService>().reset();
+    final pageSvc = context.read<DailyPageService>();
+    final Future<void> future;
+    if (anotherPassage) {
+      future = pageSvc.readAnotherPassage();
+    } else if (switchBook) {
+      future = pageSvc.discoveryMode
+          ? pageSvc.switchBook()
+          : pageSvc.nextReadingBook();
+    } else {
+      future = pageSvc.refresh();
+    }
+    future.then((_) => _onPageUpdated());
+  }
+
   @override
   Widget build(BuildContext context) {
     final entrySvc = context.watch<PageEntryService>();
@@ -92,56 +108,20 @@ class _HomePageState extends State<HomePage> {
           size: 18,
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (inDiscovery)
-                  _HomeAppBarAction(
-                    onPressed: pageSvc.loading
-                        ? null
-                        : () {
-                            _lastPromptKey = null;
-                            promptSvc.reset();
-                            pageSvc.switchBook().then((_) => _onPageUpdated());
-                          },
-                    icon: Icons.shuffle_rounded,
-                    label: '换一本',
-                  )
-                else ...[
-                  if (readingCount > 1 &&
-                      shelfSvc.config.strategy != BookPickStrategy.manual)
-                    _HomeAppBarAction(
-                      tooltip: '从在读书换一本',
-                      onPressed: pageSvc.loading
-                          ? null
-                          : () {
-                              _lastPromptKey = null;
-                              promptSvc.reset();
-                              pageSvc
-                                  .nextReadingBook()
-                                  .then((_) => _onPageUpdated());
-                            },
-                      icon: Icons.skip_next_rounded,
-                      label: '换一本',
-                    ),
-                  _HomeAppBarAction(
-                    tooltip: '还是这本书，再拆一段',
-                    onPressed: pageSvc.loading
-                        ? null
-                        : () {
-                            _lastPromptKey = null;
-                            promptSvc.reset();
-                            pageSvc.refresh().then((_) => _onPageUpdated());
-                          },
-                    icon: Icons.refresh_rounded,
-                    label: '再读一页',
-                  ),
-                ],
-              ],
+          if (inDiscovery || readingCount > 1)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: _HomeAppBarAction(
+                tooltip: inDiscovery ? '随机换一本书' : '从在读书换一本',
+                onPressed: pageSvc.loading
+                    ? null
+                    : () => _reloadPage(switchBook: true),
+                icon: inDiscovery
+                    ? Icons.shuffle_rounded
+                    : Icons.skip_next_rounded,
+                label: '换一本',
+              ),
             ),
-          ),
         ],
       ),
       body: SafeArea(
@@ -158,13 +138,10 @@ class _HomePageState extends State<HomePage> {
                         _DateBadge(),
                         const Spacer(),
                         if (!inDiscovery)
-                          Tooltip(
-                            message: '今日书由「我」中选书策略决定',
-                            child: Text(
-                              shelfSvc.config.strategy.label,
-                              style: const TextStyle(
-                                  fontSize: 11, color: AppTheme.textLight),
-                            ),
+                          const Text(
+                            '在读书',
+                            style: TextStyle(
+                                fontSize: 11, color: AppTheme.textLight),
                           )
                         else
                           const Text(
@@ -185,9 +162,15 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 12),
                     if (pageSvc.loading)
                       const _LoadingCard()
-                    else if (pageSvc.page != null) ...[
-                      PageContentCard(page: pageSvc.page!),
-                    ] else
+                    else if (pageSvc.page != null)
+                      PageContentCard(
+                        page: pageSvc.page!,
+                        anotherPageLoading: pageSvc.loading,
+                        onAnotherPage: pageSvc.loading
+                            ? null
+                            : () => _reloadPage(anotherPassage: true),
+                      )
+                    else
                       _ErrorCard(
                         message: pageSvc.error ?? '加载失败',
                         onRetry: () => pageSvc.refresh(),

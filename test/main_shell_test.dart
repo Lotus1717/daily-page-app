@@ -33,7 +33,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(ProfilePage), findsOneWidget);
-      expect(find.text('选书策略'), findsOneWidget);
+      expect(find.text('感想记录'), findsOneWidget);
 
       await tester.tap(find.text('今日'));
       await tester.pumpAndSettle();
@@ -67,7 +67,7 @@ void main() {
       expect(find.text('持久化测试'), findsOneWidget);
     });
 
-    testWidgets('returning to 今日 after addToReading shows 再读一页 not 换一本',
+    testWidgets('returning to 今日 after addToReading shows 换一页 not 换一本',
         (tester) async {
       final client = FakeDailyPageClient(
         results: [
@@ -100,7 +100,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('换一本'), findsOneWidget);
-      expect(find.text('再读一页'), findsNothing);
+      expect(find.text('换一页'), findsOneWidget);
 
       await tester.tap(find.text('在读'));
       await tester.pumpAndSettle();
@@ -119,7 +119,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('换一本'), findsNothing);
-      expect(find.text('再读一页'), findsOneWidget);
+      expect(find.text('换一页'), findsOneWidget);
       expect(find.text('在读书目'), findsOneWidget);
       expect(find.text('在读书摘录'), findsOneWidget);
       expect(client.lastBook?.title, '在读书目');

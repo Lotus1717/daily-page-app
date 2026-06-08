@@ -89,10 +89,24 @@ class DailyPageService extends ChangeNotifier {
   /// 探索模式：换一本随机书（不消耗每日首次配额）
   Future<void> switchBook() => refresh(switchBook: true);
 
-  /// 在读书模式：从队列选下一本（仍传 book_title）
+  /// 在读书模式：换队列里另一本
   Future<void> nextReadingBook() => refresh(switchBook: true);
 
-  Future<void> refresh({ShelfBook? overrideBook, bool switchBook = false}) async {
+  /// 指定今日要读的在读书并刷新书摘
+  Future<void> readBookToday(ShelfBook book) async {
+    await _bookshelf?.setTodayBook(book.id);
+    _pickedDateKey = null;
+    return refresh(overrideBook: book);
+  }
+
+  /// 同一本书再要一段摘录
+  Future<void> readAnotherPassage() => refresh(anotherPassage: true);
+
+  Future<void> refresh({
+    ShelfBook? overrideBook,
+    bool switchBook = false,
+    bool anotherPassage = false,
+  }) async {
     if (_loading) return;
     _loading = true;
     _error = null;
@@ -107,20 +121,30 @@ class DailyPageService extends ChangeNotifier {
       final todayKey = _todayKey();
       ShelfBook? book = overrideBook;
       if (book == null && hasReading) {
-        if (!switchBook && _canReuseTodayPick(todayKey)) {
+        if (anotherPassage && _pickedBook != null) {
+          book = _pickedBook;
+        } else if (!switchBook && !anotherPassage && _canReuseTodayPick(todayKey)) {
           book = _pickedBook;
         } else {
-          book = await _bookshelf!.pickForToday(todayKey);
+          book = await _bookshelf!.pickForToday(
+            todayKey,
+            excludeBookId: switchBook ? _pickedBook?.id : null,
+            respectTodayOverride: !switchBook,
+          );
         }
+      } else if (book == null && anotherPassage && _pickedBook != null) {
+        book = _pickedBook;
       }
 
-      final nonce = switchBook
+      final nonce = switchBook || anotherPassage
           ? DateTime.now().millisecondsSinceEpoch
           : 0;
 
-      final sendBook = inDiscovery && switchBook ? null : book;
+      final sendBook =
+          inDiscovery && switchBook && !anotherPassage ? null : book;
       debugPrint(
         'DailyPageService refresh: discovery=$inDiscovery switchBook=$switchBook '
+        'anotherPassage=$anotherPassage '
         'book=${sendBook?.title ?? "(none)"} bookId=${sendBook?.bookId}',
       );
 

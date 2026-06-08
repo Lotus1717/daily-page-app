@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/book_pick_strategy.dart';
 import '../models/shelf_book.dart';
 import 'reading_config_service.dart';
 
@@ -47,39 +46,48 @@ class BookshelfService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 按策略从在读书队列中选今日书目
-  Future<ShelfBook?> pickForToday(String dateKey) async {
+  /// 指定今日要读的在读书
+  Future<void> setTodayBook(String bookId) async {
+    if (!readingBooks.any((b) => b.id == bookId)) return;
+    await _config.setTodayBookId(bookId);
+    notifyListeners();
+  }
+
+  /// 自动选今日书目：优先用户指定 → 否则最久未读
+  Future<ShelfBook?> pickForToday(
+    String dateKey, {
+    String? excludeBookId,
+    bool respectTodayOverride = true,
+  }) async {
     final queue = readingBooks;
     if (queue.isEmpty) return null;
 
-    final strategy = _config.strategy;
-    ShelfBook? picked;
-
-    switch (strategy) {
-      case BookPickStrategy.manual:
-        final manualId = _config.manualBookId;
-        picked = _findInQueue(queue, manualId) ?? queue.first;
-      case BookPickStrategy.roundRobin:
-        final idx = _config.roundRobinIndex % queue.length;
-        picked = queue[idx];
-        await _config.saveRoundRobinIndex((idx + 1) % queue.length);
-      case BookPickStrategy.longestUnread:
-        queue.sort((a, b) {
-          final ak = a.lastReadDateKey ?? '';
-          final bk = b.lastReadDateKey ?? '';
-          if (ak.isEmpty && bk.isEmpty) return a.title.compareTo(b.title);
-          if (ak.isEmpty) return -1;
-          if (bk.isEmpty) return 1;
-          return ak.compareTo(bk);
-        });
-        picked = queue.first;
-      case BookPickStrategy.random:
-        final hash = dateKey.hashCode.abs();
-        picked = queue[hash % queue.length];
+    if (respectTodayOverride && excludeBookId == null) {
+      final override = _findInQueue(queue, _config.todayBookId);
+      if (override != null) {
+        await _markRead(override.id, dateKey);
+        return override;
+      }
     }
 
+    var candidates = excludeBookId == null
+        ? List<ShelfBook>.from(queue)
+        : queue.where((b) => b.id != excludeBookId).toList();
+    if (candidates.isEmpty) candidates = List<ShelfBook>.from(queue);
+
+    candidates.sort(_compareLongestUnread);
+    final picked = candidates.first;
     await _markRead(picked.id, dateKey);
     return picked;
+  }
+
+  int _compareLongestUnread(ShelfBook a, ShelfBook b) {
+    final ak = a.lastReadDateKey ?? '';
+    final bk = b.lastReadDateKey ?? '';
+    if (ak.isEmpty && bk.isEmpty) return a.title.compareTo(b.title);
+    if (ak.isEmpty) return -1;
+    if (bk.isEmpty) return 1;
+    return ak.compareTo(bk);
   }
 
   ShelfBook? _findInQueue(List<ShelfBook> queue, String? id) {
@@ -113,8 +121,8 @@ class BookshelfService extends ChangeNotifier {
     final idx = _books.indexWhere((b) => b.id == id);
     if (idx < 0) return;
     _books[idx] = _books[idx].copyWith(inReading: false);
-    if (_config.manualBookId == id) {
-      await _config.setManualBookId(null);
+    if (_config.todayBookId == id) {
+      await _config.setTodayBookId(null);
     }
     await _persist();
     notifyListeners();
@@ -161,8 +169,8 @@ class BookshelfService extends ChangeNotifier {
 
   Future<void> remove(String id) async {
     _books.removeWhere((b) => b.id == id);
-    if (_config.manualBookId == id) {
-      await _config.setManualBookId(null);
+    if (_config.todayBookId == id) {
+      await _config.setTodayBookId(null);
     }
     await _persist();
     notifyListeners();

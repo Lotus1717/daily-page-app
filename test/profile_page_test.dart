@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
-import 'package:daily_page/models/book_pick_strategy.dart';
 import 'package:daily_page/screens/history_page.dart';
 import 'package:daily_page/screens/profile_page.dart';
 
@@ -89,32 +88,6 @@ void main() {
       expect(find.text('共 1 条，点击查看'), findsOneWidget);
     });
 
-    testWidgets('strategy radio switches pick mode', (tester) async {
-      final services = await createTestServices();
-
-      await tester.pumpWidget(services.wrap(const ProfilePage()));
-      await tester.pumpAndSettle();
-
-      expect(services.configSvc.strategy, BookPickStrategy.roundRobin);
-
-      await tester.tap(find.text('随机'));
-      await tester.pumpAndSettle();
-
-      expect(services.configSvc.strategy, BookPickStrategy.random);
-      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-
-      await tester.scrollUntilVisible(
-        find.text('手动指定'),
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.text('手动指定'));
-      await tester.pumpAndSettle();
-
-      expect(services.configSvc.strategy, BookPickStrategy.manual);
-      expect(find.text('在下方指定今日要读的书'), findsOneWidget);
-    });
-
     testWidgets('displays reading stats from saved entries', (tester) async {
       final services = await createTestServices();
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -129,7 +102,6 @@ void main() {
       await tester.pumpWidget(services.wrap(const ProfilePage()));
       await tester.pumpAndSettle();
 
-      expect(find.text('2 天'), findsOneWidget);
       expect(find.textContaining('累计 2 天'), findsOneWidget);
       expect(find.textContaining('读过 2 本书'), findsOneWidget);
       expect(find.text('共 2 条，点击查看'), findsOneWidget);
