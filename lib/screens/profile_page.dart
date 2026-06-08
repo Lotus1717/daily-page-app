@@ -93,13 +93,13 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 20),
           _ReminderSection(),
           const SizedBox(height: 20),
-          _SectionTitle(title: '阅读数据', icon: Icons.insights_outlined),
+          _SectionTitle(title: '记录概览', icon: Icons.insights_outlined),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                   child: _MiniStat(
-                      label: '累计', value: '${stats.totalDays} 天')),
+                      label: '累计记录', value: '${stats.totalDays} 天')),
               const SizedBox(width: 10),
               Expanded(
                   child: _MiniStat(
@@ -107,7 +107,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(width: 10),
               Expanded(
                   child: _MiniStat(
-                      label: '本周', value: '${stats.thisWeekDays} 天')),
+                      label: '本周记录', value: '${stats.thisWeekDays} 天')),
             ],
           ),
           const SizedBox(height: 20),
@@ -273,26 +273,29 @@ class _StreakSummary extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('连续阅读',
-                  style: TextStyle(fontSize: 12, color: Colors.white70)),
-              Text('${stats.currentStreak} 天',
-                  style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('连续记录',
+                    style: TextStyle(fontSize: 12, color: Colors.white70)),
+                Text('${stats.currentStreak} 天',
+                    style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
+              ],
+            ),
           ),
-          const Spacer(),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('读过 ${stats.uniqueBooks} 本书',
+              Text('记过 ${stats.uniqueBooks} 本书',
                   style: const TextStyle(fontSize: 12, color: Colors.white70)),
-              Text('累计 ${stats.totalDays} 天',
+              const SizedBox(height: 4),
+              Text('累计记录 ${stats.totalDays} 天',
                   style: const TextStyle(fontSize: 12, color: Colors.white70)),
             ],
           ),

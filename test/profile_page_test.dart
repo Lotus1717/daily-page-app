@@ -102,8 +102,8 @@ void main() {
       await tester.pumpWidget(services.wrap(const ProfilePage()));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('累计 2 天'), findsOneWidget);
-      expect(find.textContaining('读过 2 本书'), findsOneWidget);
+      expect(find.textContaining('累计记录 2 天'), findsOneWidget);
+      expect(find.textContaining('记过 2 本书'), findsOneWidget);
       expect(find.text('共 2 条，点击查看'), findsOneWidget);
     });
 
