@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "title": "拾页 · 书友会",
+  "subtitle": "和书友一起每日读一页、聊感想",
+  "highlights": ["每周阅读话题", "共读交流", "可选加入"],
+  "qr_image_url": "https://lotus1717.github.io/daily-page-app/images/community-qr.png",
+  "hint": "长按或截图保存，打开微信扫一扫加入"
+}
