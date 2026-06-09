@@ -1,4 +1,4 @@
-/// App 品牌名称、外链与版本（上架前替换占位域名/邮箱）
+/// App 品牌名称、外链与版本
 class AppBranding {
   AppBranding._();
 
@@ -14,8 +14,8 @@ class AppBranding {
   /// 与 pubspec.yaml version 保持一致
   static const String version = '1.0.0';
 
-  /// 意见反馈邮箱
-  static const String feedbackEmail = 'Lotus1717@users.noreply.github.com';
+  /// 意见反馈 / 隐私咨询邮箱
+  static const String feedbackEmail = '2731967717@qq.com';
 
   /// 隐私政策（GitHub Pages）
   static const String privacyPolicyUrl =
