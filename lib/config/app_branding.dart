@@ -23,4 +23,8 @@ class AppBranding {
   /// 隐私政策（GitHub Pages）
   static const String privacyPolicyUrl =
       'https://lotus1717.github.io/daily-page-app/privacy.html';
+
+  /// 书友会远程配置（GitHub Pages）
+  static const String communityConfigUrl =
+      'https://lotus1717.github.io/daily-page-app/community.json';
 }

@@ -57,6 +57,21 @@ void main() {
       expect(find.text('共 2 条，点击查看'), findsOneWidget);
     });
 
+    testWidgets('community entry opens group sheet', (tester) async {
+      final services = await createTestServices();
+
+      await tester.pumpWidget(services.wrap(const ProfilePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('加入拾页书友会'), findsOneWidget);
+
+      await tester.tap(find.text('加入拾页书友会'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('关闭'), findsOneWidget);
+      expect(find.text('拾页 · 书友会'), findsOneWidget);
+    });
+
     testWidgets('about section shows feedback and privacy links', (tester) async {
       final services = await createTestServices();
 

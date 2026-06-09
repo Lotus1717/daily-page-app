@@ -6,7 +6,7 @@
 ../nonsense_prophet_app/server/
 ```
 
-线上地址：`http://175.178.249.107`（同一 Docker 容器，80 端口）
+线上地址：`https://tanmystudio.site`（Nginx 443 → Docker 8000）
 
 ## 拾页相关 API
 

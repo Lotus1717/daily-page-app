@@ -50,6 +50,9 @@ app.*.map.json
 !.env.example
 *.pem
 *.p12
+*.key
+*.csr
+notes/tanmystudio.site_nginx/
 **/credentials.json
 **/secrets.json
 

@@ -7,6 +7,7 @@ import '../utils/external_link.dart';
 import '../models/reading_stats.dart';
 import '../services/page_entry_service.dart';
 import '../services/reminder_service.dart';
+import '../widgets/community_group_sheet.dart';
 import 'history_page.dart';
 
 /// 「我」— 阅读统计与设置
@@ -35,6 +36,10 @@ class ProfilePage extends StatelessWidget {
             count: entries.length,
             onTap: openReflectionHistory,
           ),
+          const SizedBox(height: 12),
+          _CommunityEntry(
+            onTap: () => showCommunityGroupSheet(context),
+          ),
           const SizedBox(height: 20),
           const _ReminderSection(),
           const SizedBox(height: 20),
@@ -58,6 +63,70 @@ class ProfilePage extends StatelessWidget {
           const SizedBox(height: 20),
           const _AboutSection(),
         ],
+      ),
+    );
+  }
+}
+
+class _CommunityEntry extends StatelessWidget {
+  const _CommunityEntry({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppTheme.card,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            boxShadow: AppTheme.cardShadow,
+            border: Border.all(
+              color: AppTheme.accent.withValues(alpha: 0.18),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.groups_rounded,
+                      size: 22, color: AppTheme.accent),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('加入拾页书友会',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600)),
+                      SizedBox(height: 2),
+                      Text('和书友交流阅读与感想（可选）',
+                          style: TextStyle(
+                              fontSize: 12, color: AppTheme.textMuted)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded,
+                    color: AppTheme.textLight),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

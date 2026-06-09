@@ -9,7 +9,7 @@
 | 项目 | 状态 | 备注 |
 |------|------|------|
 | App Icon | ✅ 已就绪 | 所有尺寸齐全，含 1024x1024 |
-| Info.plist | ✅ 基本就绪 | ATS 已配置（允许 HTTP 到服务器） |
+| Info.plist | ✅ 基本就绪 | ATS 默认策略，API 走 HTTPS（tanmystudio.site） |
 | 底部导航 | ✅ 今日 / 在读 / 我 |
 | 每日书摘 | ✅ 核心流程完整 |
 | 感想记录 | ✅ 可写可存可删，支持按书归档 |
@@ -19,12 +19,14 @@
 | 本地通知 | ✅ 每日提醒（当天已写则跳过） |
 | 历史记录 | ✅ 全部 / 按书两种视图 |
 | 分享功能 | ✅ 生成分享文本 |
-| 测试覆盖 | ✅ 84 项测试通过 |
+| 测试覆盖 | ✅ 94 项测试通过 |
 | 错误处理 | ✅ 网络错误、配额用尽等提示 |
 | 首次启动引导 | ✅ 三页轮播 Onboarding | 可跳过，仅首次展示 |
 | 关于区块 | ✅ 「我」页底部 | 版本号、反馈（mailto）、隐私政策（浏览器打开，失败则复制） |
 | 应用内评分引导 | ✅ 第 7 条感想触发一次 | `in_app_review` |
 | 隐私政策 | ✅ GitHub Pages | https://lotus1717.github.io/daily-page-app/privacy.html |
+| API HTTPS | ✅ 已部署 | https://tanmystudio.site（Nginx + 腾讯云 SSL，2026-09-06 到期续签） |
+| 书友会入口 | ✅ 「我」页 | 远程 `community.json`，GitHub Pages 托管 |
 
 ---
 
@@ -107,6 +109,32 @@ Step 7: 提交审核
 | 免费 + 打赏 | 始终可选 | 不影响用户体验 |
 
 建议 **第一版上架完全免费**，等积累几百个用户后再加付费功能。审核也更容易过。
+
+---
+
+## 📅 运维备忘（上架后也要看）
+
+### SSL 证书续签 · tanmystudio.site
+
+| 项目 | 内容 |
+|------|------|
+| **到期日** | **2026-09-06**（建议 8 月底前处理） |
+| **控制台** | [腾讯云 SSL 证书](https://console.cloud.tencent.com/ssl) |
+| **服务器证书路径** | `/etc/nginx/ssl/tanmystudio.site_bundle.crt`、`tanmystudio.site.key` |
+| **部署文档** | `nonsense_prophet_app/server/deploy/DEPLOY_HTTPS.md` |
+
+**续签步骤：**
+
+```
+□ 1. 腾讯云申请/续签免费证书（域名 tanmystudio.site）
+□ 2. 下载 Nginx 格式，临时放到 server/deploy/ssl/
+□ 3. bash server/deploy/deploy_ssl.sh（或 scp 到服务器 /etc/nginx/ssl/）
+□ 4. 服务器执行：sudo nginx -t && sudo systemctl reload nginx
+□ 5. 验证：curl -s https://tanmystudio.site/health
+□ 6. 删除本机证书副本（.crt / .key 不要留本地、不要进 Git）
+```
+
+到期未续签 → App 无法拉书摘，需优先处理。
 
 ---
 
