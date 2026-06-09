@@ -7,8 +7,8 @@
 | Tab | 功能 |
 |-----|------|
 | **今日** | 每日书摘 + AI 引导提问 + 写感想 |
-| **在读** | 管理在读书（最多 3 本）+ 同步微信读书 |
-| **我** | 阅读统计、感想记录、Cookie 配置 |
+| **在读** | 管理在读书（最多 3 本），手动添加藏书 |
+| **我** | 阅读统计、感想记录、每日提醒 |
 
 ### 选书
 
@@ -47,7 +47,6 @@ nonsense_prophet_app/server/    ← 唯一源码，改 API 在这里
 | API | 用途 |
 |-----|------|
 | `POST /v1/daily-page` | 每日书摘 |
-| `POST /v1/weread/sync` | 微信读书同步 |
 | `POST /v1/reflection-prompt` | AI 引导提问 |
 
 ### 部署 / 更新
@@ -58,11 +57,10 @@ bash server/deploy/deploy_update.sh   # 上传 + 远程 sudo docker compose rebu
 bash server/deploy/smoke_test.sh      # 验证接口（含 daily-page）
 ```
 
-未配置微信读书时，App 进入**探索模式**：服务端 DeepSeek 随机荐书，首页可点「换一本」。
+未加入在读书时，App 进入**探索模式**：服务端 DeepSeek 随机荐书，首页可点「换一本」。
 
-## 微信读书 Cookie
+## 添加藏书
 
-1. 浏览器打开 weread.qq.com 并登录
-2. F12 → Cookies → 复制 `wr_vid`、`wr_skey`
-3. App「我」→ 粘贴保存
-4. 「在读」→ 同步微信读书 → 加入在读书
+1. 打开「在读」Tab
+2. 点右下角「添加」，输入书名和作者
+3. 新书会自动加入在读书队列（未满 3 本时）

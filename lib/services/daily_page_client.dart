@@ -15,14 +15,12 @@ class DailyPageClient {
   Future<DailyPageFetchResult> fetchWithMeta({
     required String deviceId,
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
     final reading = await _fetchFromServer(
       deviceId,
       book: book,
-      wereadCookie: wereadCookie,
       nonce: nonce,
       excludeContents: excludeContents,
     );
@@ -43,7 +41,6 @@ class DailyPageClient {
   Future<DailyPageReading> _fetchFromServer(
     String deviceId, {
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
@@ -56,9 +53,6 @@ class DailyPageClient {
       if (book.bookId != null) body['book_id'] = book.bookId;
       body['book_title'] = book.title;
       if (book.author.isNotEmpty) body['book_author'] = book.author;
-    }
-    if (wereadCookie != null && wereadCookie.isNotEmpty) {
-      body['weread_cookie'] = wereadCookie;
     }
     if (excludeContents.isNotEmpty) {
       body['exclude_contents'] = excludeContents

@@ -43,7 +43,6 @@ class FakeDailyPageClient extends DailyPageClient {
   Future<DailyPageFetchResult> fetchWithMeta({
     required String deviceId,
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
@@ -98,6 +97,7 @@ class TestServices {
       configSvc: configSvc,
       promptSvc: promptSvc,
       reminderSvc: reminderSvc,
+      firstLaunch: false,
     );
   }
 }
@@ -117,7 +117,6 @@ Future<void> initTestEnvironment() async {
 
 Future<TestServices> createTestServices({
   FakeDailyPageClient? pageClient,
-  bool withCookie = false,
   bool withReadingBook = false,
   bool preloadPage = false,
 }) async {
@@ -130,11 +129,6 @@ Future<TestServices> createTestServices({
 
   final shelfSvc = BookshelfService(config: configSvc);
   await shelfSvc.load();
-
-  if (withCookie) {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('weread_cookie', 'wr_vid=123456; wr_skey=abcDEF');
-  }
 
   if (withReadingBook) {
     await shelfSvc.addManual('在读书目', '作者');

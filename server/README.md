@@ -13,7 +13,6 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | `POST` | `/v1/daily-page` | 生成每日书摘 |
-| `POST` | `/v1/weread/sync` | 同步微信读书书架 |
 | `POST` | `/v1/reflection-prompt` | AI 引导提问 |
 
 源码位置：`nonsense_prophet_app/server/app/services/daily_page_service.py` 等。

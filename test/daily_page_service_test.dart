@@ -18,7 +18,6 @@ class _FakeDailyPageClient extends DailyPageClient {
   Future<DailyPageFetchResult> fetchWithMeta({
     required String deviceId,
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
@@ -77,7 +76,7 @@ void main() {
       expect(service.error, '服务端未配置，请检查 DeepSeek Key');
     });
 
-    test('refresh picks manual book without weread cookie', () async {
+    test('refresh picks manual book from reading queue', () async {
       final config = ReadingConfigService();
       await config.load();
       final shelf = BookshelfService(config: config);
@@ -92,16 +91,12 @@ void main() {
         date: DateTime(2026, 6, 7),
       );
       ShelfBook? capturedBook;
-      String? capturedCookie;
       final capturingClient = _CapturingClient(
         result: DailyPageFetchResult(
           reading: reading,
           pickedBook: shelf.readingBooks.first,
         ),
-        onFetch: (book, cookie) {
-          capturedBook = book;
-          capturedCookie = cookie;
-        },
+        onFetch: (book) => capturedBook = book,
       );
 
       final service = DailyPageService(client: capturingClient);
@@ -111,43 +106,6 @@ void main() {
 
       expect(capturedBook?.title, '在读书目');
       expect(capturedBook?.bookId, isNull);
-      expect(capturedCookie, isNull);
-      expect(service.discoveryMode, isFalse);
-      expect(service.pickedBook?.title, '在读书目');
-    });
-
-    test('refresh picks book from bookshelf when weread configured', () async {
-      final config = ReadingConfigService();
-      await config.load();
-      final shelf = BookshelfService(config: config);
-      await shelf.load();
-      await shelf.addManual('在读书目', '作者');
-
-      final reading = DailyPageReading(
-        bookTitle: '在读书目',
-        author: '作者',
-        content: '摘录',
-        sourceNote: '',
-        date: DateTime(2026, 6, 7),
-      );
-      ShelfBook? capturedBook;
-      final capturingClient = _CapturingClient(
-        result: DailyPageFetchResult(
-          reading: reading,
-          pickedBook: shelf.readingBooks.first,
-        ),
-        onFetch: (book, _) => capturedBook = book,
-      );
-
-      final service = DailyPageService(client: capturingClient);
-      service.bindBookshelf(shelf);
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('weread_cookie', 'sid=test');
-
-      await service.refresh();
-
-      expect(capturedBook?.title, '在读书目');
       expect(service.discoveryMode, isFalse);
       expect(service.pickedBook?.title, '在读书目');
     });
@@ -220,7 +178,7 @@ void main() {
           reading: reading,
           pickedBook: shelf.readingBooks.first,
         ),
-        onFetch: (_, __) => fetchCount++,
+        onFetch: (_) => fetchCount++,
       );
       final service = DailyPageService(client: client);
       service.bindBookshelf(shelf);
@@ -252,7 +210,7 @@ void main() {
             date: DateTime(2026, 6, 7),
           ),
         ),
-        onFetch: (book, _) => capturedBook = book,
+        onFetch: (book) => capturedBook = book,
       );
 
       final service = DailyPageService(client: client);
@@ -286,7 +244,7 @@ void main() {
           ),
           pickedBook: second,
         ),
-        onFetch: (book, _) => capturedBook = book,
+        onFetch: (book) => capturedBook = book,
       );
 
       final service = DailyPageService(client: client);
@@ -369,7 +327,6 @@ class _ExcludeCapturingClient extends DailyPageClient {
   Future<DailyPageFetchResult> fetchWithMeta({
     required String deviceId,
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
@@ -393,7 +350,6 @@ class _EchoBookClient extends DailyPageClient {
   Future<DailyPageFetchResult> fetchWithMeta({
     required String deviceId,
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
@@ -419,7 +375,6 @@ class _CountingClient extends DailyPageClient {
   Future<DailyPageFetchResult> fetchWithMeta({
     required String deviceId,
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
@@ -451,7 +406,6 @@ class _DelayedCountingClient extends DailyPageClient {
   Future<DailyPageFetchResult> fetchWithMeta({
     required String deviceId,
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
@@ -478,17 +432,16 @@ class _CapturingClient extends DailyPageClient {
   _CapturingClient({required this.result, this.onFetch});
 
   final DailyPageFetchResult result;
-  final void Function(ShelfBook? book, String? wereadCookie)? onFetch;
+  final void Function(ShelfBook? book)? onFetch;
 
   @override
   Future<DailyPageFetchResult> fetchWithMeta({
     required String deviceId,
     ShelfBook? book,
-    String? wereadCookie,
     int nonce = 0,
     List<String> excludeContents = const [],
   }) async {
-    onFetch?.call(book, wereadCookie);
+    onFetch?.call(book);
     return result;
   }
 }

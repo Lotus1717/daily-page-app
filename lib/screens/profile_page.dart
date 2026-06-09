@@ -1,72 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../config/app_branding.dart';
 import '../config/theme.dart';
+import '../utils/external_link.dart';
 import '../models/reading_stats.dart';
 import '../services/page_entry_service.dart';
 import '../services/reminder_service.dart';
-import '../services/weread_config_store.dart';
 import 'history_page.dart';
 
-/// 「我」— 阅读统计、微信读书
-class ProfilePage extends StatefulWidget {
+/// 「我」— 阅读统计与设置
+class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
-
-  @override
-  State<ProfilePage> createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends State<ProfilePage> {
-  final _cookieCtrl = TextEditingController();
-  bool _hasCookie = false;
-  List<String> _savedKeys = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCookie();
-  }
-
-  Future<void> _loadCookie() async {
-    final cookie = await WeReadConfigStore.getCookie();
-    if (cookie != null) _cookieCtrl.text = cookie;
-    setState(() {
-      _hasCookie = cookie != null && cookie.isNotEmpty;
-      _savedKeys = WeReadConfigStore.keysFromSaved(cookie);
-    });
-  }
-
-  @override
-  void dispose() {
-    _cookieCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveCookie() async {
-    final cookie = _cookieCtrl.text.trim();
-    if (cookie.isEmpty) return;
-
-    final validation = WeReadConfigStore.validate(cookie);
-    if (!validation.isValid) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validation.error!)),
-      );
-      return;
-    }
-
-    await WeReadConfigStore.saveCookie(cookie);
-    _cookieCtrl.text = validation.normalized!;
-    setState(() {
-      _hasCookie = true;
-      _savedKeys = validation.savedKeys;
-    });
-    if (!mounted) return;
-    final keyHint = validation.savedKeys.join('、');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Cookie 已保存（字段：$keyHint）')),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,9 +36,9 @@ class _ProfilePageState extends State<ProfilePage> {
             onTap: openReflectionHistory,
           ),
           const SizedBox(height: 20),
-          _ReminderSection(),
+          const _ReminderSection(),
           const SizedBox(height: 20),
-          _SectionTitle(title: '记录概览', icon: Icons.insights_outlined),
+          const _SectionTitle(title: '记录概览', icon: Icons.insights_outlined),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -111,78 +56,146 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
           const SizedBox(height: 20),
-          _SectionTitle(title: '微信读书', icon: Icons.menu_book_rounded),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.card,
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-              boxShadow: AppTheme.cardShadow,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _hasCookie ? '已连接' : '未连接',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color:
-                        _hasCookie ? AppTheme.highlight : AppTheme.textMuted,
-                  ),
-                ),
-                if (_savedKeys.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    '已保存字段：${_savedKeys.join('、')}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textMuted,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _cookieCtrl,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'wr_vid=...; wr_skey=...; wr_rt=...',
-                    filled: true,
-                    fillColor: AppTheme.bg,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _saveCookie,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.highlight,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('保存 Cookie'),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  '1. 电脑 Chrome 打开 weread.qq.com 并微信扫码登录\n'
-                  '2. 在书架随便点开一本书（激活会话）\n'
-                  '3. F12 → Application → Cookies → weread.qq.com\n'
-                  '4. 复制全部 Cookie（必须含 wr_vid、wr_skey，建议含 wr_rt）\n'
-                  '5. 粘贴后点「保存 Cookie」，再去「在读」点同步\n'
-                  '6. 若仍失败，重新登录 weread 后重复上述步骤',
-                  style: TextStyle(
-                      fontSize: 11, color: AppTheme.textMuted, height: 1.5),
-                ),
-              ],
-            ),
-          ),
+          const _AboutSection(),
         ],
+      ),
+    );
+  }
+}
+
+class _AboutSection extends StatelessWidget {
+  const _AboutSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(title: '关于', icon: Icons.info_outline_rounded),
+        const SizedBox(height: 8),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            boxShadow: AppTheme.cardShadow,
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        AppBranding.appIconAsset,
+                        width: 36,
+                        height: 36,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                AppBranding.name,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textDark,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'v${AppBranding.version}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${AppBranding.tagline} · 独立开发',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: AppTheme.accentLight),
+              _AboutActionTile(
+                icon: Icons.mail_outline_rounded,
+                title: '意见反馈',
+                onTap: () => ExternalLink.openFeedbackEmail(
+                  context,
+                  email: AppBranding.feedbackEmail,
+                ),
+              ),
+              const Divider(height: 1, indent: 14, color: AppTheme.accentLight),
+              _AboutActionTile(
+                icon: Icons.shield_outlined,
+                title: '隐私政策',
+                onTap: () => ExternalLink.openPrivacyPolicy(
+                  context,
+                  url: AppBranding.privacyPolicyUrl,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AboutActionTile extends StatelessWidget {
+  const _AboutActionTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: AppTheme.textMuted),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 18, color: AppTheme.textLight),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -351,6 +364,8 @@ class _MiniStat extends StatelessWidget {
 }
 
 class _ReminderSection extends StatelessWidget {
+  const _ReminderSection();
+
   @override
   Widget build(BuildContext context) {
     final reminder = context.watch<ReminderService>();
@@ -435,4 +450,3 @@ class _ReminderSection extends StatelessWidget {
     );
   }
 }
-

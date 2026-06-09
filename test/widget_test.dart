@@ -37,6 +37,7 @@ void main() {
         configSvc: configSvc,
         promptSvc: promptSvc,
         reminderSvc: reminderSvc,
+        firstLaunch: false,
       ),
     );
     await tester.pump(const Duration(milliseconds: 600));

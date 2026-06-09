@@ -118,19 +118,6 @@ void main() {
   });
 
   group('ReadingPage shelf interactions', () {
-    testWidgets('sync without cookie shows hint snackbar', (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byTooltip('同步微信读书'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('请先在「我」中配置微信读书 Cookie'),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('manual add auto-joins reading queue when slots available',
         (tester) async {
       await tester.pumpWidget(buildTestApp());

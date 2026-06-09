@@ -137,34 +137,6 @@ void main() {
       expect(picked?.title, '第二本');
     });
 
-    test('mergeWeReadBooks merges and updates existing', () async {
-      await shelf.addManual('三体', '旧作者');
-      final id = shelf.books.first.id;
-
-      await shelf.mergeWeReadBooks([
-        ShelfBook(
-          id: id,
-          bookId: 'wr-1',
-          title: '三体',
-          author: '刘慈欣',
-          source: ShelfBookSource.weread,
-        ),
-        const ShelfBook(
-          id: 'wr-2',
-          bookId: 'wr-2',
-          title: '球状闪电',
-          author: '刘慈欣',
-          source: ShelfBookSource.weread,
-        ),
-      ]);
-
-      expect(shelf.books, hasLength(2));
-      final updated = shelf.books.firstWhere((b) => b.id == id);
-      expect(updated.author, '刘慈欣');
-      expect(updated.source, ShelfBookSource.weread);
-      expect(updated.bookId, 'wr-1');
-    });
-
     test('notifies listeners when today book changes', () async {
       await shelf.addManual('书', '');
       var notifications = 0;

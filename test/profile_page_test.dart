@@ -7,62 +7,12 @@ import 'package:daily_page/screens/profile_page.dart';
 
 import 'test_helpers.dart';
 
-Future<void> scrollToWeReadSection(WidgetTester tester) async {
-  await tester.scrollUntilVisible(
-    find.text('保存 Cookie'),
-    200,
-    scrollable: find.byType(Scrollable).first,
-  );
-  await tester.pumpAndSettle();
-}
-
 void main() {
   setUp(() async {
     await initTestEnvironment();
   });
 
   group('ProfilePage interactions', () {
-    testWidgets('saves valid cookie and shows connected state', (tester) async {
-      final services = await createTestServices();
-
-      await tester.pumpWidget(services.wrap(const ProfilePage()));
-      await tester.pumpAndSettle();
-      await scrollToWeReadSection(tester);
-
-      expect(find.text('未连接'), findsOneWidget);
-
-      await tester.enterText(
-        find.byType(TextField),
-        'wr_vid=123456; wr_skey=abcDEF',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, '保存 Cookie'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('已连接'), findsOneWidget);
-      expect(find.text('已保存字段：wr_vid、wr_skey'), findsOneWidget);
-      expect(
-        find.text('Cookie 已保存（字段：wr_vid、wr_skey）'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('saves cookie with wr_rt and shows all saved keys', (tester) async {
-      final services = await createTestServices();
-
-      await tester.pumpWidget(services.wrap(const ProfilePage()));
-      await tester.pumpAndSettle();
-      await scrollToWeReadSection(tester);
-
-      await tester.enterText(
-        find.byType(TextField),
-        'wr_vid=1; wr_skey=2; wr_rt=token',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, '保存 Cookie'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('已保存字段：wr_vid、wr_skey、wr_rt'), findsOneWidget);
-    });
-
     testWidgets('reflection entry card navigates to HistoryPage', (tester) async {
       final services = await createTestServices();
 
@@ -107,28 +57,24 @@ void main() {
       expect(find.text('共 2 条，点击查看'), findsOneWidget);
     });
 
-    testWidgets('invalid cookie shows validation snackbar', (tester) async {
+    testWidgets('about section shows feedback and privacy links', (tester) async {
       final services = await createTestServices();
 
       await tester.pumpWidget(services.wrap(const ProfilePage()));
       await tester.pumpAndSettle();
-      await scrollToWeReadSection(tester);
 
-      await tester.enterText(
-        find.byType(TextField),
-        'wr_vid=only',
+      await tester.scrollUntilVisible(
+        find.text('隐私政策'),
+        200,
+        scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.widgetWithText(FilledButton, '保存 Cookie'));
       await tester.pumpAndSettle();
 
-      expect(find.text('未连接'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(SnackBar),
-          matching: find.textContaining('缺少 wr_skey'),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('关于'), findsOneWidget);
+      expect(find.text('意见反馈'), findsOneWidget);
+      expect(find.text('隐私政策'), findsOneWidget);
+      expect(find.textContaining('独立开发'), findsOneWidget);
+      expect(find.textContaining('v1.0.0'), findsOneWidget);
     });
   });
 }

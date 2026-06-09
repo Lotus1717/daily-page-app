@@ -7,7 +7,6 @@ import '../models/daily_page_reading.dart';
 import '../models/shelf_book.dart';
 import 'bookshelf_service.dart';
 import 'daily_page_client.dart';
-import 'weread_config_store.dart';
 
 /// 今日阅读页状态管理
 class DailyPageService extends ChangeNotifier {
@@ -115,8 +114,6 @@ class DailyPageService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final cookie = await WeReadConfigStore.getCookie();
-      final hasWeRead = cookie != null && cookie.isNotEmpty;
       final hasReading = _bookshelf?.hasReadingBooks ?? false;
       final inDiscovery = !hasReading;
 
@@ -155,7 +152,6 @@ class DailyPageService extends ChangeNotifier {
       final result = await _client.fetchWithMeta(
         deviceId: _deviceId ?? _randomId(),
         book: sendBook,
-        wereadCookie: hasWeRead ? cookie : null,
         nonce: nonce,
         excludeContents: excludeContents,
       );

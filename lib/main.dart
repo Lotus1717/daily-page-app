@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'config/app_branding.dart';
 import 'config/theme.dart';
 import 'screens/main_shell.dart';
+import 'screens/onboarding_page.dart';
 import 'services/bookshelf_service.dart';
 import 'services/daily_page_service.dart';
 import 'services/device_id_store.dart';
@@ -41,6 +42,7 @@ Future<void> main() async {
     configSvc: configSvc,
     promptSvc: promptSvc,
     reminderSvc: reminderSvc,
+    firstLaunch: await OnboardingPage.isFirstLaunch(),
   ));
 }
 
@@ -53,6 +55,7 @@ class DailyPageApp extends StatelessWidget {
     required this.configSvc,
     required this.promptSvc,
     required this.reminderSvc,
+    required this.firstLaunch,
   });
 
   final DailyPageService pageSvc;
@@ -61,6 +64,7 @@ class DailyPageApp extends StatelessWidget {
   final ReadingConfigService configSvc;
   final ReflectionPromptService promptSvc;
   final ReminderService reminderSvc;
+  final bool firstLaunch;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +81,11 @@ class DailyPageApp extends StatelessWidget {
         title: AppBranding.name,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const MainShell(),
+        initialRoute: firstLaunch ? '/onboarding' : '/home',
+        routes: {
+          '/onboarding': (context) => const OnboardingPage(),
+          '/home': (context) => const MainShell(),
+        },
       ),
     );
   }

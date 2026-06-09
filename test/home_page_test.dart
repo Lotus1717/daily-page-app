@@ -40,7 +40,6 @@ void main() {
       );
       final services = await createTestServices(
         pageClient: client,
-        withCookie: true,
         withReadingBook: true,
         preloadPage: true,
       );
@@ -298,7 +297,6 @@ void main() {
         (tester) async {
       final services = await createTestServices(
         withReadingBook: true,
-        withCookie: true,
         preloadPage: true,
       );
 
@@ -316,7 +314,6 @@ void main() {
         (tester) async {
       final services = await createTestServices(
         withReadingBook: true,
-        withCookie: true,
         preloadPage: true,
       );
 
@@ -409,7 +406,6 @@ void main() {
     testWidgets('multi-book in-reading shows 换一本 only in AppBar',
         (tester) async {
       final services = await createTestServices(
-        withCookie: true,
         withReadingBook: true,
         preloadPage: true,
       );

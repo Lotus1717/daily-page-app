@@ -128,27 +128,6 @@ class BookshelfService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> mergeWeReadBooks(List<ShelfBook> incoming) async {
-    final byId = {for (final b in _books) b.id: b};
-    for (final book in incoming) {
-      final existing = byId[book.id];
-      if (existing != null) {
-        byId[book.id] = existing.copyWith(
-          title: book.title,
-          author: book.author,
-          cover: book.cover,
-          bookId: book.bookId,
-          source: ShelfBookSource.weread,
-        );
-      } else {
-        byId[book.id] = book;
-      }
-    }
-    _books = byId.values.toList()..sort((a, b) => a.title.compareTo(b.title));
-    await _persist();
-    notifyListeners();
-  }
-
   Future<void> addManual(String title, String author) async {
     final trimmed = title.trim();
     if (trimmed.isEmpty) return;

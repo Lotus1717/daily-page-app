@@ -74,19 +74,5 @@ void main() {
       );
     });
 
-    test('includes weread_cookie when provided', () async {
-      final client = DailyPageClient(
-        httpClient: MockClient((request) async {
-          final body = jsonDecode(request.body) as Map<String, dynamic>;
-          expect(body['weread_cookie'], 'sid=abc');
-          return http.Response(jsonEncode(sampleJson), 200);
-        }),
-      );
-
-      await client.fetchWithMeta(
-        deviceId: 'dev-1',
-        wereadCookie: 'sid=abc',
-      );
-    });
   });
 }

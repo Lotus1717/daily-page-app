@@ -1,4 +1,4 @@
-enum ShelfBookSource { weread, manual }
+enum ShelfBookSource { manual }
 
 class ShelfBook {
   final String id;
@@ -71,24 +71,8 @@ class ShelfBook {
       author: json['author'] as String? ?? '',
       cover: json['cover'] as String?,
       inReading: inReading,
-      source: ShelfBookSource.values.firstWhere(
-        (s) => s.name == json['source'],
-        orElse: () => ShelfBookSource.manual,
-      ),
+      source: ShelfBookSource.manual,
       lastReadDateKey: json['lastReadDateKey'] as String?,
-    );
-  }
-
-  factory ShelfBook.fromWeRead(Map<String, dynamic> json) {
-    final bookId = json['book_id'] as String? ?? json['bookId'] as String?;
-    return ShelfBook(
-      id: bookId ?? 'manual-${json['title']}',
-      bookId: bookId,
-      title: json['title'] as String,
-      author: json['author'] as String? ?? '',
-      cover: json['cover'] as String?,
-      inReading: false,
-      source: ShelfBookSource.weread,
     );
   }
 }

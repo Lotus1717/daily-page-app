@@ -2,6 +2,9 @@
 class AppBranding {
   AppBranding._();
 
+  /// App 图标资源路径
+  static const String appIconAsset = 'assets/logo/app_icon.png';
+
   /// 显示名（主屏幕、AppBar）
   static const String name = '拾页';
 

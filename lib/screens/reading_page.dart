@@ -6,8 +6,6 @@ import '../models/shelf_book.dart';
 import '../services/bookshelf_service.dart';
 import '../services/daily_page_service.dart';
 import '../services/reading_config_service.dart';
-import '../services/weread_config_store.dart';
-import '../services/weread_service.dart';
 
 /// 在读书 Tab — 管理最多 3 本并行在读书
 class ReadingPage extends StatefulWidget {
@@ -18,43 +16,6 @@ class ReadingPage extends StatefulWidget {
 }
 
 class _ReadingPageState extends State<ReadingPage> {
-  bool _syncing = false;
-
-  String _formatSyncError(Object error) {
-    var msg = error.toString();
-    const prefix = 'Exception: ';
-    if (msg.startsWith(prefix)) msg = msg.substring(prefix.length);
-    return msg;
-  }
-
-  Future<void> _syncFromWeRead() async {
-    final cookie = await WeReadConfigStore.getCookie();
-    if (cookie == null || cookie.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先在「我」中配置微信读书 Cookie')),
-      );
-      return;
-    }
-
-    setState(() => _syncing = true);
-    try {
-      final result = await WeReadService().syncShelf(cookie);
-      if (!mounted) return;
-      await context.read<BookshelfService>().mergeWeReadBooks(result.books);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已同步 ${result.count} 本书')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('同步失败：${_formatSyncError(e)}')),
-      );
-    } finally {
-      if (mounted) setState(() => _syncing = false);
-    }
-  }
-
   Future<void> _addManualBook() async {
     final result = await showDialog<({String title, String author})>(
       context: context,
@@ -77,22 +38,7 @@ class _ReadingPageState extends State<ReadingPage> {
     final todayId = shelf.config.todayBookId ?? pageSvc.pickedBook?.id;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('在读'),
-        actions: [
-          IconButton(
-            icon: _syncing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.sync_rounded),
-            onPressed: _syncing ? null : _syncFromWeRead,
-            tooltip: '同步微信读书',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('在读')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addManualBook,
         backgroundColor: AppTheme.accent,
@@ -134,7 +80,7 @@ class _ReadingPageState extends State<ReadingPage> {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text('暂无藏书，同步微信读书或手动添加',
+                child: Text('暂无藏书，点右下角添加一本书',
                     style: TextStyle(color: AppTheme.textMuted)),
               ),
             )
@@ -220,7 +166,7 @@ class _EmptyReadingHint extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       ),
       child: const Text(
-        '还没有在读书。从下方「全部藏书」中加入，或同步微信读书。',
+        '还没有在读书。从下方「全部藏书」中加入，或点右下角添加新书。',
         style: TextStyle(fontSize: 13, color: AppTheme.textMuted, height: 1.5),
       ),
     );
@@ -276,17 +222,6 @@ class _ReadingBookCard extends StatelessWidget {
               ],
             ),
           ),
-          if (book.source == ShelfBookSource.weread)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppTheme.highlightLight,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text('微信',
-                  style: TextStyle(fontSize: 10, color: AppTheme.highlight)),
-            ),
           if (isToday)
             Container(
               margin: const EdgeInsets.only(right: 8),

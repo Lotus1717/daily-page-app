@@ -12,6 +12,7 @@ import '../services/daily_page_service.dart';
 import '../services/page_entry_service.dart';
 import '../services/reflection_prompt_service.dart';
 import '../services/reminder_service.dart';
+import '../services/review_service.dart';
 import '../services/share_service.dart';
 import '../utils/passage_key.dart';
 import '../widgets/page_content_card.dart';
@@ -280,6 +281,8 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+    // 评分引导（条件触发）
+    unawaited(ReviewService.shouldPrompt(context));
   }
 
   void _editReflection(BuildContext context, PageEntry entry) {
@@ -460,7 +463,7 @@ class _DiscoveryHintBanner extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              '未配置微信读书，正在从书海随机选书。右上角「换一本」可切换',
+              '还没有加入在读书，正在从书海随机选书。右上角「换一本」可切换',
               style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
             ),
           ),
