@@ -1,11 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../config/app_branding.dart';
 import '../models/page_entry.dart';
+import '../utils/widget_image_capture.dart';
+import '../widgets/share_card.dart';
 
-/// 分享感想与书摘摘要
+/// 分享感想与书摘卡片
 class ShareService {
   ShareService._();
 
@@ -46,30 +51,65 @@ class ShareService {
     PageEntry entry, {
     required BuildContext anchorContext,
   }) async {
-    final text = formatShareText(entry);
     final origin = _shareOrigin(anchorContext);
 
     try {
-      final result = await Share.share(
-        text,
-        sharePositionOrigin: origin,
+      final bytes = await WidgetImageCapture.capture(
+        anchorContext,
+        ShareCard(entry: entry),
       );
-      debugPrint('Share result: ${result.status}');
+
+      if (bytes != null) {
+        final tempDir = await getTemporaryDirectory();
+        final file = File(
+          '${tempDir.path}/shiye_share_${entry.id}_${DateTime.now().millisecondsSinceEpoch}.png',
+        );
+        await file.writeAsBytes(bytes);
+
+        final result = await Share.shareXFiles(
+          [XFile(file.path, mimeType: 'image/png')],
+          sharePositionOrigin: origin,
+        );
+        debugPrint('Share card result: ${result.status}');
+        return;
+      }
+
+      debugPrint('Share card capture failed, falling back to text');
+      await _shareText(entry, origin: origin);
     } catch (e, st) {
       debugPrint('Share failed: $e\n$st');
-      if (anchorContext.mounted) {
-        ScaffoldMessenger.of(anchorContext).showSnackBar(
-          const SnackBar(content: Text('分享失败，请重试')),
-        );
+      if (!anchorContext.mounted) return;
+      try {
+        await _shareText(entry, origin: origin);
+      } catch (fallbackError, fallbackSt) {
+        debugPrint('Share text fallback failed: $fallbackError\n$fallbackSt');
+        if (anchorContext.mounted) {
+          ScaffoldMessenger.of(anchorContext).showSnackBar(
+            const SnackBar(content: Text('分享失败，请重试')),
+          );
+        }
       }
     }
   }
 
-  /// SnackBar 上点分享时，等 SnackBar 收起后再弹系统面板。
+  static Future<void> _shareText(
+    PageEntry entry, {
+    required Rect origin,
+  }) async {
+    final result = await Share.share(
+      formatShareText(entry),
+      sharePositionOrigin: origin,
+    );
+    debugPrint('Share text result: ${result.status}');
+  }
+
+  /// SnackBar 上点分享时，先收起 SnackBar，再弹系统面板。
   static void shareEntryAfterFrame(
     PageEntry entry, {
     required BuildContext anchorContext,
   }) {
+    final messenger = ScaffoldMessenger.maybeOf(anchorContext);
+    messenger?.hideCurrentSnackBar();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!anchorContext.mounted) return;
       shareEntry(entry, anchorContext: anchorContext);

@@ -83,7 +83,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   _OnboardingCard(
                     title: '每天拾一页',
                     subtitle: '不用读完一本书',
-                    description: '每天打开 app，自动从在读书中拆一页给你。\n三分钟读完，没有压力。',
+                    description: '每天打开 app，自动从在读书中拾一页给你。\n三分钟读完，没有压力。',
                   ),
                   _OnboardingCard(
                     title: '写一句就好',
@@ -93,7 +93,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   _OnboardingCard(
                     title: '从你的书开始',
                     subtitle: '手动添加藏书',
-                    description: '在「在读」中加入 1–3 本书，\n每日从中拆一页，慢慢读完。',
+                    description: '在「在读」中加入 1–3 本书，\n每日从中拾一页，慢慢读完。',
                   ),
                 ],
               ),

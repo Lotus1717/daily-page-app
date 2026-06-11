@@ -492,7 +492,7 @@ class _ShelfHintBanner extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              '去「在读」加入 1–3 本书，每日从中拆一页',
+              '去「在读」加入 1–3 本书，每日从中拾一页',
               style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
             ),
           ),

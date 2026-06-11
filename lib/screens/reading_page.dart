@@ -144,7 +144,7 @@ class _ReadingQueueHeader extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             count == 0
-                ? '选 1–3 本书并行阅读，每日从中拆一页'
+                ? '选 1–3 本书并行阅读，每日从中拾一页'
                 : '今日书摘只会从这 ${count} 本中选取',
             style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
           ),

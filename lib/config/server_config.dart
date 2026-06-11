@@ -1,4 +1,4 @@
-/// 服务端配置 — 与废话预言家共用 tanmystudio.site
+/// 服务端配置 — 与废话预言家共用后端
 class ServerConfig {
   ServerConfig._();
 

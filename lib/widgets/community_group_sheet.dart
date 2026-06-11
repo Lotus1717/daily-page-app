@@ -130,16 +130,6 @@ class _CommunityGroupSheetState extends State<_CommunityGroupSheet> {
                       color: AppTheme.textMuted,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '公众号为可选内容订阅，需自行扫码关注；App 不读取您的微信信息。',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textLight,
-                      height: 1.5,
-                    ),
-                  ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,

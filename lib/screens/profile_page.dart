@@ -108,18 +108,9 @@ class _CommunityEntry extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('关注拾页公众号',
-                          style: TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w600)),
-                      SizedBox(height: 2),
-                      Text('每日书摘推送，每周书单（可选）',
-                          style: TextStyle(
-                              fontSize: 12, color: AppTheme.textMuted)),
-                    ],
-                  ),
+                  child: Text('关注拾页公众号',
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
                 const Icon(Icons.chevron_right_rounded,
                     color: AppTheme.textLight),
