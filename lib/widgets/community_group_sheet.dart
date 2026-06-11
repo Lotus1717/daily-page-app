@@ -123,7 +123,7 @@ class _CommunityGroupSheetState extends State<_CommunityGroupSheet> {
                   _QrImage(url: config.qrImageUrl),
                   const SizedBox(height: 12),
                   Text(
-                    config.hint ?? '截图后打开微信扫一扫加入',
+                    config.hint ?? '截图后微信扫码关注公众号',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 12,
@@ -132,7 +132,7 @@ class _CommunityGroupSheetState extends State<_CommunityGroupSheet> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '书友会为可选交流社群，需自行扫码加入；App 不读取您的微信信息。',
+                    '公众号为可选内容订阅，需自行扫码关注；App 不读取您的微信信息。',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11,

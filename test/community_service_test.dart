@@ -26,7 +26,7 @@ void main() {
       final config = CommunityConfig.fromJson({});
 
       expect(config.enabled, isTrue);
-      expect(config.title, '拾页 · 书友会');
+      expect(config.title, '拾页 · 读书公众号');
       expect(config.qrImageUrl, isEmpty);
     });
   });

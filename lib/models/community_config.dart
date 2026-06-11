@@ -20,8 +20,8 @@ class CommunityConfig {
     final highlightsRaw = json['highlights'];
     return CommunityConfig(
       enabled: json['enabled'] as bool? ?? true,
-      title: json['title'] as String? ?? '拾页 · 书友会',
-      subtitle: json['subtitle'] as String? ?? '和书友一起每日读一页',
+      title: json['title'] as String? ?? '拾页 · 读书公众号',
+      subtitle: json['subtitle'] as String? ?? '安静订阅，分享好书与阅读感悟',
       qrImageUrl: json['qr_image_url'] as String? ?? '',
       highlights: highlightsRaw is List
           ? highlightsRaw.map((e) => e.toString()).toList()
@@ -32,10 +32,10 @@ class CommunityConfig {
 
   static const fallback = CommunityConfig(
     enabled: true,
-    title: '拾页 · 书友会',
-    subtitle: '和书友一起每日读一页、聊感想',
+    title: '拾页 · 读书公众号',
+    subtitle: '安静订阅，分享好书与阅读感悟',
     qrImageUrl: '',
-    highlights: ['每周阅读话题', '共读交流', '可选加入'],
-    hint: '截图后打开微信扫一扫加入',
+    highlights: ['好书推荐', '阅读感悟', '书摘灵感'],
+    hint: '截图后微信扫码关注公众号',
   );
 }

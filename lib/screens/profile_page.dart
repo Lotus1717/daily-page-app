@@ -103,7 +103,7 @@ class _CommunityEntry extends StatelessWidget {
                     color: AppTheme.accentBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.groups_rounded,
+                  child: const Icon(Icons.auto_stories_rounded,
                       size: 22, color: AppTheme.accent),
                 ),
                 const SizedBox(width: 14),
@@ -111,11 +111,11 @@ class _CommunityEntry extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('加入拾页书友会',
+                      Text('关注拾页公众号',
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600)),
                       SizedBox(height: 2),
-                      Text('和书友交流阅读与感想（可选）',
+                      Text('每日书摘推送，每周书单（可选）',
                           style: TextStyle(
                               fontSize: 12, color: AppTheme.textMuted)),
                     ],

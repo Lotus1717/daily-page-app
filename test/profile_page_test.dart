@@ -63,13 +63,13 @@ void main() {
       await tester.pumpWidget(services.wrap(const ProfilePage()));
       await tester.pumpAndSettle();
 
-      expect(find.text('加入拾页书友会'), findsOneWidget);
+      expect(find.text('关注拾页公众号'), findsOneWidget);
 
-      await tester.tap(find.text('加入拾页书友会'));
+      await tester.tap(find.text('关注拾页公众号'));
       await tester.pumpAndSettle();
 
       expect(find.text('关闭'), findsOneWidget);
-      expect(find.text('拾页 · 书友会'), findsOneWidget);
+      expect(find.text('拾页 · 读书公众号'), findsOneWidget);
     });
 
     testWidgets('about section shows feedback and privacy links', (tester) async {
