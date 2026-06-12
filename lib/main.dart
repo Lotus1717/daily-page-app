@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
@@ -30,10 +32,10 @@ Future<void> main() async {
 
   await entrySvc.load();
   await shelfSvc.load();
-  await reminderSvc.init();
-  await reminderSvc.syncSchedule(entrySvc);
   pageSvc.bindBookshelf(shelfSvc);
   pageSvc.init(deviceId);
+
+  final firstLaunch = await OnboardingPage.isFirstLaunch();
 
   runApp(DailyPageApp(
     pageSvc: pageSvc,
@@ -42,8 +44,19 @@ Future<void> main() async {
     configSvc: configSvc,
     promptSvc: promptSvc,
     reminderSvc: reminderSvc,
-    firstLaunch: await OnboardingPage.isFirstLaunch(),
+    firstLaunch: firstLaunch,
   ));
+
+  // 提醒插件延后初始化，避免阻塞或拖垮冷启动
+  unawaited(_warmUpReminders(reminderSvc, entrySvc));
+}
+
+Future<void> _warmUpReminders(
+  ReminderService reminderSvc,
+  PageEntryService entrySvc,
+) async {
+  await reminderSvc.init();
+  await reminderSvc.syncSchedule(entrySvc);
 }
 
 class DailyPageApp extends StatelessWidget {
